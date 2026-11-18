@@ -35,7 +35,8 @@ export const auth = betterAuth({
   account: {
     accountLinking: {
       enabled: true,
-      trustedProviders: ["google", "github", "email"],
+      // BetterAuth's email/password account provider id is "credential".
+      trustedProviders: ["google", "github", "credential"],
       // Existing users created with email/password have emailVerified: false.
       // Allow their Google/GitHub identity to link to the same email.
       requireLocalEmailVerified: false,
