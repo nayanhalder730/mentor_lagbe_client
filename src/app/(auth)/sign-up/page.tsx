@@ -1,9 +1,10 @@
-
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   ArrowRight,
   BookOpen,
@@ -14,18 +15,26 @@ import {
   LockKeyhole,
   UserRound,
   Check,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-client";
 
 type UserRole = "student" | "tutor";
+type FormErrors = Partial<Record<"name" | "email" | "password", string>>;
 
 export default function SignUpPage() {
+  const router = useRouter();
+
+  // Default role is Student; the plan is always "free" at sign-up (set on server).
   const [role, setRole] = useState<UserRole>("student");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const [formData, setFormData] = useState({
     name: "",
@@ -38,18 +47,67 @@ export default function SignUpPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    setErrors((current) => ({ ...current, [e.target.name]: undefined }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const validate = () => {
+    const nextErrors: FormErrors = {};
+
+    if (!formData.name.trim()) {
+      nextErrors.name = "Full name is required.";
+    } else if (formData.name.trim().length < 2) {
+      nextErrors.name = "Name must be at least 2 characters.";
+    }
+
+    if (!formData.email.trim()) {
+      nextErrors.email = "Email address is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+
+    if (!formData.password) {
+      nextErrors.password = "Password is required.";
+    } else if (formData.password.length < 8) {
+      nextErrors.password = "Password must be at least 8 characters.";
+    }
+
+    return nextErrors;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    console.log({
-      ...formData,
-      role,
-      plan: "free",
-    });
+    const validationErrors = validate();
+    setErrors(validationErrors);
 
-    // Better Auth integration will be added here.
+    if (Object.keys(validationErrors).length > 0) {
+      toast.error("Please fix the highlighted fields and try again.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await authClient.signUp.email({
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role, // "student" | "tutor" — plan defaults to "free" on the server
+      });
+
+      if (error) {
+        toast.error(error.message || "Could not create your account.");
+        return;
+      }
+
+      toast.success(`Welcome to MentorLagbe! You are registered as a ${role}.`);
+      router.push("/");
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -91,7 +149,7 @@ export default function SignUpPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
 
               {/* Account Type */}
               <div>
@@ -170,10 +228,13 @@ export default function SignUpPage() {
                     onChange={handleChange}
                     placeholder="Enter your full name"
                     autoComplete="name"
-                    required
+                    aria-invalid={Boolean(errors.name)}
                     className="h-12 rounded-xl pl-10"
                   />
                 </div>
+                {errors.name && (
+                  <p className="text-xs text-red-500">{errors.name}</p>
+                )}
               </div>
 
               {/* Email */}
@@ -189,10 +250,13 @@ export default function SignUpPage() {
                     onChange={handleChange}
                     placeholder="you@example.com"
                     autoComplete="email"
-                    required
+                    aria-invalid={Boolean(errors.email)}
                     className="h-12 rounded-xl pl-10"
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-xs text-red-500">{errors.email}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -208,8 +272,7 @@ export default function SignUpPage() {
                     onChange={handleChange}
                     placeholder="Create a password"
                     autoComplete="new-password"
-                    minLength={8}
-                    required
+                    aria-invalid={Boolean(errors.password)}
                     className="h-12 rounded-xl pl-10 pr-11"
                   />
                   <button
@@ -221,9 +284,13 @@ export default function SignUpPage() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                <p className="text-xs text-slate-400">
-                  Password must be at least 8 characters.
-                </p>
+                {errors.password ? (
+                  <p className="text-xs text-red-500">{errors.password}</p>
+                ) : (
+                  <p className="text-xs text-slate-400">
+                    Password must be at least 8 characters.
+                  </p>
+                )}
               </div>
 
               {/* Free Plan */}
@@ -242,10 +309,20 @@ export default function SignUpPage() {
               {/* Submit */}
               <Button
                 type="submit"
-                className="h-12 w-full rounded-xl bg-[#087f75] text-base font-semibold hover:bg-[#06665f]"
+                disabled={isLoading}
+                className="h-12 w-full rounded-xl bg-[#087f75] text-base font-semibold hover:bg-[#06665f] disabled:opacity-70"
               >
-                Create Account
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    Create Account
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </form>
 
@@ -263,7 +340,7 @@ export default function SignUpPage() {
         </Card>
 
         <p className="mt-6 text-center text-xs text-slate-400">
-          © {new Date().getFullYear()} MentorLagbe. All rights reserved.
+          © MentorLagbe. All rights reserved.
         </p>
       </div>
     </main>
