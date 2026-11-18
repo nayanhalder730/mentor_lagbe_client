@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 type SocialProvider = "google" | "github";
@@ -51,20 +53,37 @@ const providers: Array<{
 ];
 
 export function SocialLoginButtons() {
+  const [pending, setPending] = useState<SocialProvider | null>(null);
+
   const handleSocialSignIn = async (provider: SocialProvider) => {
+    if (pending) return;
+
+    setPending(provider);
+
     try {
-      const { error } = await authClient.signIn.social({
+      const { data, error } = await authClient.signIn.social({
         provider,
-        callbackURL: "/",
+        callbackURL: `${window.location.origin}/`,
       });
 
       if (error) {
-        toast.error(`${provider === "google" ? "Google" : "GitHub"} sign-in is unavailable.`, {
-          description: error.message,
+        toast.error(`Could not start ${provider === "google" ? "Google" : "GitHub"} sign-in.`, {
+          description: error.message || "Please check your OAuth credentials and try again.",
         });
+        return;
+      }
+
+      toast.success(`Redirecting to ${provider === "google" ? "Google" : "GitHub"}…`);
+
+      // BetterAuth normally auto-redirects through its redirect plugin.
+      // This explicit fallback guarantees navigation if that does not fire.
+      if (data?.url && typeof window !== "undefined") {
+        window.location.href = data.url;
       }
     } catch {
       toast.error("Could not start social sign-in. Please try again.");
+    } finally {
+      setPending(null);
     }
   };
 
@@ -75,11 +94,12 @@ export function SocialLoginButtons() {
           <button
             key={id}
             type="button"
+            disabled={pending !== null}
             onClick={() => handleSocialSignIn(id)}
-            className="flex h-11 items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-[#0b927e] hover:bg-[#f2faf7] hover:text-[#087f75] hover:shadow-md hover:shadow-[#087f75]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0b927e] active:translate-y-0"
+            className="flex h-11 items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-[#0b927e] hover:bg-[#f2faf7] hover:text-[#087f75] hover:shadow-md hover:shadow-[#087f75]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0b927e] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
           >
-            {icon}
-            {label}
+            {pending === id ? <Loader2 size={17} className="animate-spin" /> : icon}
+            {pending === id ? "Connecting..." : label}
           </button>
         ))}
       </div>
