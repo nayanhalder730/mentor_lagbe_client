@@ -91,6 +91,8 @@ NEXT_PUBLIC_IMGBB_KEY=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 GITHUB_CLIENT_ID=          # optional social login
 GITHUB_CLIENT_SECRET=      # optional social login
+GOOGLE_CLIENT_ID=          # optional social login
+GOOGLE_CLIENT_SECRET=      # optional social login
 ```
 
 Backend secrets go in **`mentor_lagbe_server/.env`** (never committed):
