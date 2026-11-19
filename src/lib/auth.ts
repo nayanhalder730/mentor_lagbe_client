@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { jwt } from "better-auth/plugins";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 
@@ -95,5 +96,9 @@ export const auth = betterAuth({
       },
     },
   },
+  // Issues short-lived JWTs for first-party services (e.g. the Express API).
+  // Uses the plugin's secure defaults: Ed25519 JWKS keys stored in MongoDB,
+  // encrypted private key, 15-minute expiry, and issuer/audience from baseURL.
+  plugins: [jwt()],
   ...(Object.keys(socialProviders).length > 0 ? { socialProviders } : {}),
 });
