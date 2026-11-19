@@ -44,12 +44,14 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      // Every new account is a Student, unless a role is sent at sign-up.
+      // Role is never accepted as generic client input. The create hook below
+      // reads the role from the trusted email/password sign-up request only,
+      // and update-user rejects any attempt to submit this field.
       role: {
         type: "string",
         defaultValue: "student",
         required: false,
-        input: true,
+        input: false,
       },
       // Plan is server-controlled. Only the Stripe webhook may upgrade it.
       plan: {
@@ -73,10 +75,19 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (user) => {
+        before: async (user, context) => {
+          // `role.input` is false, so role never arrives through normal user
+          // input. Read it only from the email/password sign-up request, where
+          // the form still submits a role. All other creation paths (including
+          // Google/GitHub) default to "student".
+          const requestedRole =
+            context?.path === "/sign-up/email"
+              ? (context.body as { role?: unknown } | undefined)?.role
+              : undefined;
+
           // Only "student" or "tutor" may be chosen at sign-up.
           // Anything else (e.g. "admin") falls back to "student".
-          const role = user.role === "tutor" ? "tutor" : "student";
+          const role = requestedRole === "tutor" ? "tutor" : "student";
           // Mark verified locally (no SMTP verification in this app) so
           // Google/GitHub identities can link to email/password accounts.
           return { data: { ...user, role, emailVerified: true } };
