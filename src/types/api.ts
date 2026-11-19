@@ -151,6 +151,7 @@ export type Application = {
   tuitionTitle: string;
   subject: string;
   monthlyFee: number;
+  tutorName: string | null;
   tutorEmail: string;
   studentName: string;
   studentEmail: string;

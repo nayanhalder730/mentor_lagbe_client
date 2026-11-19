@@ -72,6 +72,13 @@ function describeError(error: unknown) {
   return "Something went wrong. Please try again.";
 }
 
+/** Uses the real tutor name when present, otherwise the stored tutor email. */
+function getTutorDisplayName(application: Application) {
+  const name = application.tutorName?.trim();
+
+  return name ? name : application.tutorEmail;
+}
+
 function ApplicationsSkeleton() {
   return (
     <div role="status" aria-live="polite" className="space-y-6">
@@ -350,7 +357,7 @@ export default function MyApplicationsView() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="pl-5">Tuition</TableHead>
-                        <TableHead>Tutor email</TableHead>
+                        <TableHead>Tutor</TableHead>
                         <TableHead>Monthly fee</TableHead>
                         <TableHead>Applied</TableHead>
                         <TableHead>Status</TableHead>
@@ -358,7 +365,10 @@ export default function MyApplicationsView() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {visibleApplications.map((application) => (
+                      {visibleApplications.map((application) => {
+                        const tutorName = getTutorDisplayName(application);
+
+                        return (
                         <TableRow key={application.id}>
                           <TableCell className="max-w-xs pl-5">
                             <p
@@ -374,8 +384,21 @@ export default function MyApplicationsView() {
                           <TableCell>
                             <span className="flex items-center gap-1.5 text-xs text-[#075b55]/70 dark:text-[#f5f5ed]/65">
                               <Mail className="size-3.5 shrink-0" aria-hidden="true" />
-                              <span className="truncate" title={application.tutorEmail}>
-                                {application.tutorEmail}
+                              <span className="min-w-0">
+                                <span
+                                  className="block truncate font-medium"
+                                  title={tutorName}
+                                >
+                                  {tutorName}
+                                </span>
+                                {tutorName !== application.tutorEmail ? (
+                                  <span
+                                    className="block truncate text-[11px] text-[#075b55]/50 dark:text-[#f5f5ed]/45"
+                                    title={application.tutorEmail}
+                                  >
+                                    {application.tutorEmail}
+                                  </span>
+                                ) : null}
                               </span>
                             </span>
                           </TableCell>
@@ -413,13 +436,17 @@ export default function MyApplicationsView() {
                             )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
 
                 <ul className="space-y-3 p-4 md:hidden">
-                  {visibleApplications.map((application) => (
+                  {visibleApplications.map((application) => {
+                    const tutorName = getTutorDisplayName(application);
+
+                    return (
                     <li
                       key={application.id}
                       className="rounded-xl border border-[#075b55]/10 p-4 dark:border-white/10"
@@ -441,11 +468,16 @@ export default function MyApplicationsView() {
                       <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                         <div className="min-w-0">
                           <dt className="text-[#075b55]/45 dark:text-[#f5f5ed]/40">
-                            Tutor email
+                            Tutor
                           </dt>
-                          <dd className="truncate text-[#075b55]/75 dark:text-[#f5f5ed]/70" title={application.tutorEmail}>
-                            {application.tutorEmail}
+                          <dd className="truncate text-[#075b55]/75 dark:text-[#f5f5ed]/70" title={tutorName}>
+                            {tutorName}
                           </dd>
+                          {tutorName !== application.tutorEmail ? (
+                            <dd className="truncate text-[11px] text-[#075b55]/50 dark:text-[#f5f5ed]/45" title={application.tutorEmail}>
+                              {application.tutorEmail}
+                            </dd>
+                          ) : null}
                         </div>
                         <div>
                           <dt className="text-[#075b55]/45 dark:text-[#f5f5ed]/40">
@@ -479,7 +511,8 @@ export default function MyApplicationsView() {
                         </Button>
                       ) : null}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </>
             )}
