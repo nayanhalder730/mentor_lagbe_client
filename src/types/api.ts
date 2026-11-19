@@ -77,6 +77,9 @@ export type UserListQuery = {
   search?: string;
 };
 
+/** Roles an admin may assign through the role-change endpoint. */
+export type AssignableRole = Extract<UserRole, "student" | "tutor">;
+
 /* -------------------------------------------------------------------------- */
 /* Tuitions                                                                   */
 /* -------------------------------------------------------------------------- */

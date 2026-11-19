@@ -5,6 +5,7 @@ import type {
   Application,
   ApplicationListData,
   ApplicationListQuery,
+  AssignableRole,
   CheckoutSessionData,
   CreateApplicationInput,
   CreateTuitionInput,
@@ -209,6 +210,17 @@ export function listUsers(query?: UserListQuery) {
   return apiFetch<ApiSuccessResponse<UserListData>>("/api/users", {
     query,
   }).then((response) => response.data);
+}
+
+/** Admin-only role change. Only student/tutor roles are assignable. */
+export function updateUserRole(id: string, role: AssignableRole) {
+  return apiFetch<ApiSuccessResponse<User>>(
+    resourcePath("/api/users", id) + "/role",
+    {
+      method: "PATCH",
+      body: { role },
+    },
+  ).then((response) => response.data);
 }
 
 export function listAdminTuitions(query?: AdminTuitionListQuery) {
