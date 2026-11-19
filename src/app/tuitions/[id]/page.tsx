@@ -1,3 +1,4 @@
+import { SavedTuitionsProvider } from "@/components/public/saved-tuitions-provider";
 import TuitionDetailsView from "@/components/public/tuition-details-view";
 
 // PublicChrome reads usePathname(); this dynamic route must render per request.
@@ -10,5 +11,9 @@ export default async function TuitionDetailsPage({
 }) {
   const { id } = await params;
 
-  return <TuitionDetailsView tuitionId={id} />;
+  return (
+    <SavedTuitionsProvider>
+      <TuitionDetailsView tuitionId={id} />
+    </SavedTuitionsProvider>
+  );
 }

@@ -77,6 +77,17 @@ export type UserListQuery = {
   search?: string;
 };
 
+/** Payload returned by saved-tuition mutations. */
+export type SavedTuitionMutationData = {
+  tuitionId: string;
+  saved: boolean;
+};
+
+export type SavedTuitionListQuery = {
+  page?: number;
+  limit?: number;
+};
+
 /** Roles an admin may assign through the role-change endpoint. */
 export type AssignableRole = Extract<UserRole, "student" | "tutor">;
 

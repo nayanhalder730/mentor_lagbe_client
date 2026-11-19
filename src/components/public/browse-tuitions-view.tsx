@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import TuitionCard from "@/components/public/tuition-card";
+import SaveTuitionButton from "@/components/public/save-tuition-button";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -529,7 +530,12 @@ export default function BrowseTuitionsView() {
             <>
               <div className="grid gap-5 sm:grid-cols-2">
                 {state.data.tuitions.map((tuition: Tuition) => (
-                  <TuitionCard key={tuition.id} tuition={tuition} />
+                  <div key={tuition.id} className="relative">
+                    <TuitionCard tuition={tuition} />
+                    <div className="absolute top-3 right-3 z-10">
+                      <SaveTuitionButton tuitionId={tuition.id} compact />
+                    </div>
+                  </div>
                 ))}
               </div>
 

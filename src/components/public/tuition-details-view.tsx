@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/lib/auth-client";
 import { isApiError } from "@/lib/api";
+import SaveTuitionButton from "@/components/public/save-tuition-button";
 import {
   createApplication,
   getTuition,
@@ -452,6 +453,10 @@ export default function TuitionDetailsView({
                       <span className="text-sm font-medium text-[#075b55]/50 dark:text-[#f5f5ed]/45">/ month</span>
                     </p>
                   </Panel>
+
+                  <div className="mt-4">
+                    <SaveTuitionButton tuitionId={tuitionId} />
+                  </div>
 
                   <div className="mt-4">
                     {sessionPending ? (

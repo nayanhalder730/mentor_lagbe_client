@@ -15,6 +15,8 @@ import type {
   PaymentListQuery,
   ReviewApplicationInput,
   ReviewTuitionApprovalInput,
+  SavedTuitionListQuery,
+  SavedTuitionMutationData,
   SetTuitionActiveInput,
   Tuition,
   TuitionListData,
@@ -49,6 +51,28 @@ export function getMyProfile() {
   return apiFetch<ApiSuccessResponse<User>>("/api/users/me").then(
     (response) => response.data,
   );
+}
+
+/** Student's saved tuitions. Backend filters to approved + active listings. */
+export function listSavedTuitions(query?: SavedTuitionListQuery) {
+  return apiFetch<ApiSuccessResponse<TuitionListData>>(
+    "/api/users/me/saved-tuitions",
+    { query },
+  ).then((response) => response.data);
+}
+
+export function saveTuition(tuitionId: string) {
+  return apiFetch<ApiSuccessResponse<SavedTuitionMutationData>>(
+    resourcePath("/api/users/me/saved-tuitions", tuitionId),
+    { method: "POST" },
+  ).then((response) => response.data);
+}
+
+export function unsaveTuition(tuitionId: string) {
+  return apiFetch<ApiSuccessResponse<SavedTuitionMutationData>>(
+    resourcePath("/api/users/me/saved-tuitions", tuitionId),
+    { method: "DELETE" },
+  ).then((response) => response.data);
 }
 
 export function updateMyProfile(input: UpdateProfileInput) {

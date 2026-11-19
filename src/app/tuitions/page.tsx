@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import BrowseTuitionsView from "@/components/public/browse-tuitions-view";
+import { SavedTuitionsProvider } from "@/components/public/saved-tuitions-provider";
 
 export const metadata = {
   title: "Browse Tuitions | MentorLagbe",
@@ -20,7 +21,9 @@ export default function TuitionsPage() {
         </div>
       }
     >
-      <BrowseTuitionsView />
+      <SavedTuitionsProvider>
+        <BrowseTuitionsView />
+      </SavedTuitionsProvider>
     </Suspense>
   );
 }
