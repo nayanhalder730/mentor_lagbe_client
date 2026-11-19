@@ -2,3 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Class-based dark mode (toggled on <html> by the theme provider). */
+@custom-variant dark (&:where(.dark, .dark *));
+

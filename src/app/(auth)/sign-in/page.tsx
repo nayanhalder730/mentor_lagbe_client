@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useClientYear } from "@/hooks/use-client-year";
 import { authClient } from "@/lib/auth-client";
 
 type FormErrors = Partial<Record<"email" | "password", string>>;
@@ -82,7 +83,7 @@ function SocialLoginButtons() {
       // forces users to retry, which trips GitHub's sign-in rate limit.
       const { data, error } = await authClient.signIn.social({
         provider,
-        callbackURL: `${window.location.origin}/`,
+        callbackURL: `${window.location.origin}/dashboard`,
         disableRedirect: true,
       });
 
@@ -270,11 +271,7 @@ export default function SignInPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Read the current year after mount so prerendering stays stable.
-  const [year, setYear] = useState(2026);
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
+  const year = useClientYear();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -328,7 +325,7 @@ export default function SignInPage() {
       }
 
       toast.success("Signed in successfully. Welcome back!");
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.");
