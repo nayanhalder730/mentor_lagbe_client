@@ -108,6 +108,22 @@ export function updateTuition(id: string, input: UpdateTuitionInput) {
   ).then((response) => response.data);
 }
 
+/**
+ * Tutor-owned active status toggle. Only `isActive` is sent; ownership and
+ * approval are enforced by the backend.
+ */
+export function updateTuitionActiveStatus(id: string, isActive: boolean) {
+  const body: SetTuitionActiveInput = { isActive };
+
+  return apiFetch<ApiSuccessResponse<Tuition>>(
+    resourcePath("/api/tuitions", id) + "/status",
+    {
+      method: "PATCH",
+      body,
+    },
+  ).then((response) => response.data);
+}
+
 /** Returns nothing: the backend responds with a message but no `data`. */
 export async function deleteTuition(id: string): Promise<void> {
   await apiFetch<ApiMessageResponse>(resourcePath("/api/tuitions", id), {

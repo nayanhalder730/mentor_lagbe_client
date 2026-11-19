@@ -9,6 +9,7 @@ import {
   Clock,
   MapPin,
   Pencil,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 
@@ -62,6 +63,7 @@ import {
   deleteTuition,
   listMyTuitions,
   updateTuition,
+  updateTuitionActiveStatus,
 } from "@/lib/api-endpoints";
 import type { Tuition, TuitionMode, UpdateTuitionInput } from "@/types/api";
 
@@ -88,6 +90,10 @@ function describeError(error: unknown) {
   }
 
   return "Something went wrong. Please try again.";
+}
+
+function isApprovalConflict(error: unknown) {
+  return isApiError(error) && error.status === 409;
 }
 
 function toForm(tuition: Tuition): TuitionForm {
@@ -329,6 +335,48 @@ export default function MyTuitionsView() {
     }
   };
 
+  const handleToggleActive = async (tuition: Tuition) => {
+    if (processingId || tuition.approvalStatus !== "approved") return;
+
+    setProcessingId(tuition.id);
+
+    try {
+      const updated = await updateTuitionActiveStatus(
+        tuition.id,
+        !tuition.isActive,
+      );
+
+      // Show the backend's result immediately, then reconcile with a refetch.
+      setState((current) =>
+        current.status === "ready"
+          ? {
+              ...current,
+              data: current.data.map((item) =>
+                item.id === updated.id
+                  ? { ...item, isActive: updated.isActive }
+                  : item,
+              ),
+            }
+          : current,
+      );
+
+      toast.success(
+        updated.isActive ? "Tuition activated" : "Tuition deactivated",
+      );
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      toast.error(describeError(error));
+
+      if (isApprovalConflict(error)) {
+        // Approval may have changed elsewhere; resync instead of showing a
+        // stale active state.
+        setReloadKey((key) => key + 1);
+      }
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const tuitions = state.status === "ready" ? state.data : [];
 
   const counts = {
@@ -395,9 +443,10 @@ export default function MyTuitionsView() {
           </StatGrid>
 
           <p className="rounded-xl border border-[#d5b36a]/30 bg-[#d5b36a]/5 px-4 py-3 text-xs text-[#8a6a28] dark:border-[#d5b36a]/25 dark:text-[#e8cf99]">
-            Active status is controlled by admins. A tuition can be activated
-            only after approval. Editing an approved or rejected tuition sends
-            it back to pending review and makes it inactive until re-approved.
+            Approved tuitions can be activated or deactivated here. Pending and
+            rejected tuitions stay locked until an admin approves them. Editing
+            an approved or rejected tuition sends it back to pending review and
+            makes it inactive until re-approved.
           </p>
 
           <SectionCard
@@ -477,6 +526,35 @@ export default function MyTuitionsView() {
                               >
                                 {tuition.isActive ? "Active" : "Inactive"}
                               </StatusBadge>
+
+                              {tuition.approvalStatus === "approved" ? (
+                                <Button
+                                  type="button"
+                                  size="xs"
+                                  variant="outline"
+                                  disabled={processingId !== null}
+                                  onClick={() => handleToggleActive(tuition)}
+                                  aria-label={
+                                    tuition.isActive
+                                      ? `Deactivate ${tuition.title}`
+                                      : `Activate ${tuition.title}`
+                                  }
+                                >
+                                  {processingId === tuition.id ? (
+                                    <RefreshCw
+                                      className="animate-spin"
+                                      aria-hidden="true"
+                                    />
+                                  ) : null}
+                                  {tuition.isActive ? "Deactivate" : "Activate"}
+                                </Button>
+                              ) : (
+                                <span className="max-w-[10rem] text-[11px] leading-tight text-[#075b55]/50 dark:text-[#f5f5ed]/45">
+                                  {tuition.approvalStatus === "pending"
+                                    ? "Pending approval — status locked"
+                                    : "Rejected — approval required first"}
+                                </span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="pr-5 text-right">
@@ -584,10 +662,39 @@ export default function MyTuitionsView() {
                         </div>
                       </dl>
 
-                      <div className="mt-3 flex items-center gap-2">
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <StatusBadge tone={tuition.isActive ? "green" : "neutral"}>
                           {tuition.isActive ? "Active" : "Inactive"}
                         </StatusBadge>
+
+                        {tuition.approvalStatus === "approved" ? (
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="outline"
+                            disabled={processingId !== null}
+                            onClick={() => handleToggleActive(tuition)}
+                            aria-label={
+                              tuition.isActive
+                                ? `Deactivate ${tuition.title}`
+                                : `Activate ${tuition.title}`
+                            }
+                          >
+                            {processingId === tuition.id ? (
+                              <RefreshCw
+                                className="animate-spin"
+                                aria-hidden="true"
+                              />
+                            ) : null}
+                            {tuition.isActive ? "Deactivate" : "Activate"}
+                          </Button>
+                        ) : (
+                          <span className="text-[11px] text-[#075b55]/50 dark:text-[#f5f5ed]/45">
+                            {tuition.approvalStatus === "pending"
+                              ? "Pending approval — status locked"
+                              : "Rejected — approval required first"}
+                          </span>
+                        )}
                       </div>
 
                       <div className="mt-4 flex gap-2">
