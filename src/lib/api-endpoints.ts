@@ -150,6 +150,13 @@ export function reviewApplication(id: string, input: ReviewApplicationInput) {
   ).then((response) => response.data);
 }
 
+/** Cancels a pending application. Ownership is enforced by the backend. */
+export async function cancelApplication(id: string): Promise<void> {
+  await apiFetch<ApiMessageResponse>(resourcePath("/api/applications", id), {
+    method: "DELETE",
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 /* Payments                                                                   */
 /* -------------------------------------------------------------------------- */

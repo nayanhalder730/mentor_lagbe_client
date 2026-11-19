@@ -329,9 +329,11 @@ export function ActivityItem({
 export function EmptyActivity({
   title,
   description,
+  action,
 }: {
   title: string;
   description: string;
+  action?: ReactNode;
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#075b55]/20 px-4 py-10 text-center dark:border-white/15">
@@ -344,6 +346,7 @@ export function EmptyActivity({
       <p className="max-w-sm text-xs text-[#075b55]/55 dark:text-[#f5f5ed]/50">
         {description}
       </p>
+      {action ? <div className="mt-2">{action}</div> : null}
     </div>
   );
 }
@@ -409,9 +412,11 @@ export function OverviewSkeleton({
 export function OverviewError({
   message,
   onRetry,
+  title = "We couldn't load your dashboard",
 }: {
   message: string;
   onRetry: () => void;
+  title?: string;
 }) {
   return (
     <div
@@ -425,7 +430,7 @@ export function OverviewError({
 
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold tracking-tight text-[#075b55] dark:text-[#f5f5ed]">
-            We couldn&apos;t load your dashboard
+            {title}
           </h2>
           <p className="mt-1 text-sm text-[#075b55]/65 dark:text-[#f5f5ed]/60">
             {message}
