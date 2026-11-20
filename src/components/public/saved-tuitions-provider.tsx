@@ -24,6 +24,7 @@ type SavedContextValue = {
   role: UserRole | null;
   sessionPending: boolean;
   loading: boolean;
+  error: string | null;
   savedIds: Set<string>;
   pendingIds: Set<string>;
   toggle: (tuitionId: string) => Promise<void>;
@@ -31,6 +32,63 @@ type SavedContextValue = {
 };
 
 const SavedTuitionsContext = createContext<SavedContextValue | null>(null);
+
+const SAVED_PAGE_SIZE = 100;
+
+function readPositiveInteger(value: unknown): number | null {
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < 1
+  ) {
+    return null;
+  }
+
+  return value;
+}
+
+/**
+ * Walks every page of the existing paginated endpoint. A page failure rejects
+ * the whole load so incomplete data is never presented as a complete list.
+ */
+async function fetchAllSavedTuitionIds(): Promise<Set<string>> {
+  const ids = new Set<string>();
+  const first = await listSavedTuitions({
+    page: 1,
+    limit: SAVED_PAGE_SIZE,
+  });
+
+  for (const tuition of first.tuitions) {
+    ids.add(tuition.id);
+  }
+
+  const pagination = first.pagination;
+  const reportedPages = readPositiveInteger(pagination?.totalPages);
+  const total = readPositiveInteger(pagination?.total);
+  const limit = readPositiveInteger(pagination?.limit) ?? SAVED_PAGE_SIZE;
+
+  if (reportedPages === null && total === null) {
+    throw new Error("Saved tuition pagination metadata is unavailable.");
+  }
+
+  const derivedPages =
+    total === null ? reportedPages : Math.max(1, Math.ceil(total / limit));
+  const pageCount = Math.max(reportedPages ?? 1, derivedPages ?? 1);
+
+  for (let page = 2; page <= pageCount; page += 1) {
+    const data = await listSavedTuitions({ page, limit });
+
+    if (data.tuitions.length === 0) {
+      throw new Error("Saved tuition results ended before all pages loaded.");
+    }
+
+    for (const tuition of data.tuitions) {
+      ids.add(tuition.id);
+    }
+  }
+
+  return ids;
+}
 
 function describeError(error: unknown) {
   if (isApiError(error) && error.message.trim() !== "") {
@@ -50,6 +108,7 @@ export function SavedTuitionsProvider({ children }: { children: ReactNode }) {
   const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const pendingRef = useRef<Set<string>>(new Set());
 
@@ -58,24 +117,40 @@ export function SavedTuitionsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (role !== "student") return;
-
     let active = true;
 
-    listSavedTuitions({ page: 1, limit: 100 })
-      .then((data) => {
-        if (!active) return;
+    const load = async () => {
+      await Promise.resolve();
 
-        setSavedIds(new Set(data.tuitions.map((tuition) => tuition.id)));
-      })
-      .catch(() => {
-        if (!active) return;
+      if (!active) return;
 
+      if (role !== "student") {
         setSavedIds(new Set());
-      })
-      .finally(() => {
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const ids = await fetchAllSavedTuitionIds();
+
+        if (!active) return;
+
+        setSavedIds(ids);
+      } catch (loadError) {
+        if (!active) return;
+
+        // Keep the last known ids; an incomplete load must not look empty.
+        setError(describeError(loadError));
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    };
+
+    void load();
 
     return () => {
       active = false;
@@ -135,6 +210,7 @@ export function SavedTuitionsProvider({ children }: { children: ReactNode }) {
         role,
         sessionPending: isPending,
         loading,
+        error,
         savedIds,
         pendingIds,
         toggle,

@@ -16,7 +16,7 @@ export default function SaveTuitionButton({
   compact?: boolean;
 }) {
   const pathname = usePathname();
-  const { role, sessionPending, loading, savedIds, pendingIds, toggle } =
+  const { role, sessionPending, loading, error, savedIds, pendingIds, toggle, refresh } =
     useSavedTuitions();
 
   if (sessionPending || (role === "student" && loading)) {
@@ -51,6 +51,23 @@ export default function SaveTuitionButton({
   }
 
   if (role !== "student") return null;
+
+  if (error) {
+    return (
+      <Button
+        type="button"
+        size={compact ? "xs" : "sm"}
+        variant="outline"
+        onClick={refresh}
+        title={error}
+        aria-label="Saved state unavailable. Retry loading saved tuitions."
+        className={compact ? "" : "w-full"}
+      >
+        <RefreshCw aria-hidden="true" />
+        Retry
+      </Button>
+    );
+  }
 
   const saved = savedIds.has(tuitionId);
   const pending = pendingIds.has(tuitionId);
