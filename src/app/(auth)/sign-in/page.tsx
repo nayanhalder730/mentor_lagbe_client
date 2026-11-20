@@ -14,9 +14,7 @@ import {
   LockKeyhole,
   Loader2,
   MapPin,
-  Quote,
   ShieldCheck,
-  Star,
   Video,
 } from "lucide-react";
 
@@ -142,8 +140,8 @@ function SocialLoginButtons() {
 const brandFeatures = [
   {
     icon: ShieldCheck,
-    title: "Verified tutors",
-    description: "Every profile is reviewed before going live.",
+    title: "Admin-reviewed tuitions",
+    description: "Public listings appear after approval.",
   },
   {
     icon: Video,
@@ -155,12 +153,6 @@ const brandFeatures = [
     title: "Local to global",
     description: "Find mentors near you or anywhere online.",
   },
-];
-
-const brandStats = [
-  { value: "12k+", label: "Students" },
-  { value: "1.8k", label: "Tutors" },
-  { value: "4.9/5", label: "Avg. rating" },
 ];
 
 function AuthBrandPanel() {
@@ -227,36 +219,26 @@ function AuthBrandPanel() {
           </ul>
         </div>
 
-        {/* Stats + testimonial */}
-        <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-3 border-t border-white/15 pt-6">
-            {brandStats.map((stat) => (
-              <div key={stat.label}>
-                <p className="text-xl font-bold xl:text-2xl">{stat.value}</p>
-                <p className="text-[11px] tracking-wide text-white/60 uppercase">
-                  {stat.label}
-                </p>
-              </div>
+        {/* Product value statements */}
+        <div className="space-y-6 border-t border-white/15 pt-6">
+          <p className="text-xs font-semibold tracking-[0.18em] text-[#d1fae5] uppercase">
+            What you can do here
+          </p>
+          <ul className="space-y-2 text-sm text-white/75">
+            {[
+              "Learn with the right mentor.",
+              "Explore tuition opportunities.",
+              "Manage your learning journey in one place.",
+            ].map((statement) => (
+              <li key={statement} className="flex items-start gap-2.5">
+                <span
+                  className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#a7f3d0]"
+                  aria-hidden="true"
+                />
+                {statement}
+              </li>
             ))}
-          </div>
-
-          <div className="hidden rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur-md xl:block">
-            <Quote size={20} className="text-[#a7f3d0]" />
-            <p className="mt-2 text-sm leading-relaxed text-white/85">
-              “I found a physics mentor in ten minutes. One semester later my
-              results completely changed.”
-            </p>
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs font-medium text-white/70">
-                Ayesha R. — Student
-              </span>
-              <span className="flex gap-0.5 text-[#fde68a]">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Star key={index} size={13} fill="currentColor" />
-                ))}
-              </span>
-            </div>
-          </div>
+          </ul>
         </div>
       </div>
     </aside>
