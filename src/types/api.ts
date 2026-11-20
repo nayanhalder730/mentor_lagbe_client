@@ -197,6 +197,11 @@ export type CreateApplicationInput = {
   studentNote?: string | null;
 };
 
+/** Minimal result of the authenticated student application check. */
+export type ApplicationCheckData = {
+  hasApplied: boolean;
+};
+
 export type ReviewApplicationInput = {
   status: "accepted" | "rejected";
 };

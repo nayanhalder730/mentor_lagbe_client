@@ -3,6 +3,7 @@ import type {
   ApiMessageResponse,
   ApiSuccessResponse,
   Application,
+  ApplicationCheckData,
   ApplicationListData,
   ApplicationListQuery,
   AssignableRole,
@@ -159,6 +160,14 @@ export async function deleteTuition(id: string): Promise<void> {
 /* -------------------------------------------------------------------------- */
 /* Applications                                                               */
 /* -------------------------------------------------------------------------- */
+
+/** Efficient authenticated check for one tuition; no application list fetch. */
+export function checkTuitionApplication(tuitionId: string) {
+  return apiFetch<ApiSuccessResponse<ApplicationCheckData>>(
+    "/api/applications/check",
+    { query: { tuitionId } },
+  ).then((response) => response.data);
+}
 
 export function listMyApplications(query?: ApplicationListQuery) {
   return apiFetch<ApiSuccessResponse<ApplicationListData>>(

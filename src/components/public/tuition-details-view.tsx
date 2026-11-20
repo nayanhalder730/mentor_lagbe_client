@@ -33,9 +33,9 @@ import { useSession } from "@/lib/auth-client";
 import { isApiError } from "@/lib/api";
 import SaveTuitionButton from "@/components/public/save-tuition-button";
 import {
+  checkTuitionApplication,
   createApplication,
   getTuition,
-  listMyApplications,
 } from "@/lib/api-endpoints";
 import { normalizeRole } from "@/lib/roles";
 import type { Application, Tuition } from "@/types/api";
@@ -49,8 +49,10 @@ type DetailsState =
   | { status: "ready"; tuition: Tuition; error: null };
 
 type ApplicationState =
-  | { status: "loading"; application: null }
-  | { status: "ready"; application: Application | null };
+  | { status: "loading" }
+  | { status: "error"; error: string }
+  | { status: "applied"; application: Application | null }
+  | { status: "notApplied" };
 
 type ApplicationForm = {
   studentPhone: string;
@@ -160,7 +162,6 @@ export default function TuitionDetailsView({
   });
   const [application, setApplication] = useState<ApplicationState>({
     status: "loading",
-    application: null,
   });
   const [applicationReloadKey, setApplicationReloadKey] = useState(0);
   const [form, setForm] = useState<ApplicationForm>(EMPTY_FORM);
@@ -204,23 +205,21 @@ export default function TuitionDetailsView({
 
     let active = true;
 
-    listMyApplications({ page: 1, limit: 100 })
+    checkTuitionApplication(tuitionId)
       .then((data) => {
         if (!active) return;
 
-        setApplication({
-          status: "ready",
-          application:
-            data.applications.find((item) => item.tuitionId === tuitionId) ??
-            null,
-        });
+        setApplication(
+          data.hasApplied
+            ? { status: "applied", application: null }
+            : { status: "notApplied" },
+        );
       })
-      .catch(() => {
-        // UX-only check: the backend remains the duplicate-application
-        // authority, so a failed lookup falls back to showing the form.
+      .catch((error: unknown) => {
         if (!active) return;
 
-        setApplication({ status: "ready", application: null });
+        // An unverifiable check must not be presented as "not applied".
+        setApplication({ status: "error", error: describeError(error) });
       });
 
     return () => {
@@ -233,10 +232,15 @@ export default function TuitionDetailsView({
     setReloadKey((key) => key + 1);
   };
 
+  const handleApplicationRetry = () => {
+    setApplication({ status: "loading" });
+    setApplicationReloadKey((key) => key + 1);
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (submitting || application.application) return;
+    if (submitting || application.status !== "notApplied") return;
 
     const validationError = validateApplicationForm(form);
 
@@ -257,7 +261,7 @@ export default function TuitionDetailsView({
         studentNote: form.studentNote.trim() === "" ? null : form.studentNote.trim(),
       });
 
-      setApplication({ status: "ready", application: created });
+      setApplication({ status: "applied", application: created });
       setForm(EMPTY_FORM);
       toast.success("Application submitted successfully");
     } catch (error) {
@@ -266,6 +270,7 @@ export default function TuitionDetailsView({
       toast.error(message);
 
       if (isApiError(error) && (error.status === 409 || error.status === 404)) {
+        setApplication({ status: "loading" });
         setApplicationReloadKey((key) => key + 1);
       }
     } finally {
@@ -494,11 +499,26 @@ export default function TuitionDetailsView({
                           for moderation only.
                         </p>
                       </Panel>
+                    ) : application.status === "error" ? (
+                      <Panel
+                        title="Application status unavailable"
+                        description={application.error}
+                      >
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleApplicationRetry}
+                        >
+                          <RefreshCw aria-hidden="true" />
+                          Retry status check
+                        </Button>
+                      </Panel>
                     ) : application.status === "loading" ? (
                       <Panel title="Application">
                         <Skeleton className="h-16 w-full" />
                       </Panel>
-                    ) : application.application ? (
+                    ) : application.status === "applied" ? (
                       <Panel
                         title="Your application"
                         description="This tuition already has an application from your account."
@@ -509,11 +529,21 @@ export default function TuitionDetailsView({
                               Status
                             </p>
                             <p className="mt-1 text-sm font-semibold text-[#075b55] dark:text-[#f5f5ed]">
-                              Applied {formatDate(application.application.appliedAt)}
+                              {application.application
+                                ? `Applied ${formatDate(application.application.appliedAt)}`
+                                : "Already applied"}
                             </p>
                           </div>
-                          <StatusBadge tone={applicationStatusTone(application.application.status)}>
-                            {titleCase(application.application.status)}
+                          <StatusBadge
+                            tone={
+                              application.application
+                                ? applicationStatusTone(application.application.status)
+                                : "amber"
+                            }
+                          >
+                            {application.application
+                              ? titleCase(application.application.status)
+                              : "Applied"}
                           </StatusBadge>
                         </div>
                         <p className="mt-4 text-xs text-[#075b55]/55 dark:text-[#f5f5ed]/50">
