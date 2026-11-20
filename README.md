@@ -2,13 +2,27 @@
 
 Next.js frontend for **MentorLagbe**, a role-based tuition marketplace connecting students with tutors through approved tuition listings, applications, admin moderation and Pro subscriptions.
 
-> Deployment URL: **TODO — add the verified live frontend URL here after deployment.**
-> No live URL is committed in this repository.
+> Client live URL: **NOT PROVIDED — no verified live frontend URL exists in the repository.**
+> Add the real deployed URL only after deployment is confirmed.
 
-Repository links documented in the previous README:
+## Repository URLs
 
 - Client: https://github.com/nayanhalder730/mentor_lagbe_client
 - Server: https://github.com/nayanhalder730/mentor_lagbe_server
+
+---
+
+## Submission Information
+
+| Item | Value |
+| --- | --- |
+| Admin credentials | **NOT PROVIDED** — no verified admin credentials exist in the repository. |
+| Tutor test credentials | **NOT PROVIDED** — no verified tutor credentials exist in the repository. |
+| Client live URL | **NOT PROVIDED** — no verified deployment URL exists in the repository. |
+| Client repository | https://github.com/nayanhalder730/mentor_lagbe_client |
+| Server repository | https://github.com/nayanhalder730/mentor_lagbe_server |
+
+Do not invent credentials or URLs for submission; add only verified values.
 
 ---
 
@@ -37,6 +51,22 @@ Repository links documented in the previous README:
 | Notifications | Sonner |
 | Payments | Stripe Checkout (server-created sessions; browser redirect only) |
 | Media | ImgBB direct browser upload |
+
+---
+
+## Main npm packages
+
+| Package | Purpose |
+| --- | --- |
+| `next`, `react`, `react-dom` | App Router framework and UI runtime |
+| `typescript`, `eslint`, `eslint-config-next` | Typechecking and linting |
+| `tailwindcss`, `@tailwindcss/turbopack`, `tw-animate-css` | Styling |
+| `@base-ui/react`, `@shadcn/react`, `class-variance-authority` | UI primitives |
+| `better-auth`, `@better-auth/mongo-adapter`, `mongodb` | Authentication and database adapter |
+| `lucide-react` | Icons |
+| `sonner` | Toast notifications |
+| `embla-carousel-react` | Carousel |
+| `date-fns`, `recharts`, `cmdk`, `input-otp`, `react-day-picker`, `react-resizable-panels`, `shiki` | Supporting UI/utility libraries |
 
 ---
 
