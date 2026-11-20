@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -25,6 +25,55 @@ import { useClientYear } from "@/hooks/use-client-year";
 import { authClient } from "@/lib/auth-client";
 
 type FormErrors = Partial<Record<"email" | "password", string>>;
+
+/**
+ * Accept only same-origin, root-relative paths. This is untrusted query input:
+ * no protocol-relative URLs, absolute URLs, backslashes, encoded separators,
+ * control characters or malformed values are allowed. Query strings are kept.
+ */
+function getSafeInternalRedirect(value: string | null): string | null {
+  if (!value) return null;
+
+  const candidate = value.trim();
+
+  if (
+    candidate === "" ||
+    !candidate.startsWith("/") ||
+    candidate.startsWith("//") ||
+    candidate.includes("\\") ||
+    /[\u0000-\u001F\u007F]/.test(candidate)
+  ) {
+    return null;
+  }
+
+  let decoded = candidate;
+
+  try {
+    decoded = decodeURIComponent(candidate);
+  } catch {
+    return null;
+  }
+
+  if (
+    decoded.includes("\\") ||
+    decoded.startsWith("//") ||
+    /[\u0000-\u001F\u007F]/.test(decoded)
+  ) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(candidate, "https://mentorlagbe.internal");
+
+    if (parsed.origin !== "https://mentorlagbe.internal") {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  return candidate;
+}
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -66,7 +115,7 @@ const providers: Array<{
   { id: "github", label: "GitHub", icon: <GitHubIcon /> },
 ];
 
-function SocialLoginButtons() {
+function SocialLoginButtons({ callbackPath }: { callbackPath: string }) {
   const [pending, setPending] = useState<SocialProvider | null>(null);
 
   const handleSocialSignIn = async (provider: SocialProvider) => {
@@ -79,9 +128,11 @@ function SocialLoginButtons() {
       // the OAuth callback when it links a social identity to an email account;
       // revoking it first causes "unable_to_link_account" after Authorize and
       // forces users to retry, which trips GitHub's sign-in rate limit.
+      const callbackURL = new URL(callbackPath, window.location.origin).toString();
+
       const { data, error } = await authClient.signIn.social({
         provider,
-        callbackURL: `${window.location.origin}/dashboard`,
+        callbackURL,
         disableRedirect: true,
       });
 
@@ -245,8 +296,11 @@ function AuthBrandPanel() {
   );
 }
 
-export default function SignInPage() {
+function SignInPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackPath =
+    getSafeInternalRedirect(searchParams.get("callbackUrl")) ?? "/dashboard";
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -307,7 +361,7 @@ export default function SignInPage() {
       }
 
       toast.success("Signed in successfully. Welcome back!");
-      router.push("/dashboard");
+      router.push(callbackPath);
       router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -388,7 +442,7 @@ export default function SignInPage() {
 
             {/* Social login (renders its own divider) */}
             <div className="mb-5">
-              <SocialLoginButtons />
+              <SocialLoginButtons callbackPath={callbackPath} />
             </div>
 
             {/* Form */}
@@ -506,5 +560,23 @@ export default function SignInPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex min-h-screen items-center justify-center bg-[#f3faf7] text-sm text-[#075b55]/60 dark:bg-[#06110f] dark:text-[#f5f5ed]/60"
+        >
+          Loading sign in…
+        </div>
+      }
+    >
+      <SignInPageContent />
+    </Suspense>
   );
 }
