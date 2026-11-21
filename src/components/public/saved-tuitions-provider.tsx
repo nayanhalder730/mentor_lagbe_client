@@ -192,9 +192,11 @@ export function SavedTuitionsProvider({ children }: { children: ReactNode }) {
         });
 
         toast.error(
-          isApiError(error) && error.status === 409
-            ? "This tuition is already saved"
-            : describeError(error),
+          isApiError(error) && error.code === "FREE_BOOKMARK_LIMIT"
+            ? error.message
+            : isApiError(error) && error.status === 409
+              ? "This tuition is already saved"
+              : describeError(error),
         );
       } finally {
         pendingRef.current.delete(tuitionId);

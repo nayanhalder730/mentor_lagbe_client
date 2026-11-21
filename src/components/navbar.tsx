@@ -114,6 +114,12 @@ export default function Navbar() {
   const role = normalizeRole(user?.role);
   const roleInfo = roleDetails[role];
 
+  // Primary navigation keeps a clearly visible Dashboard entry for signed-in
+  // users on both desktop and mobile.
+  const visibleNavLinks = user
+    ? [...navLinks, { href: roleInfo.dashboard, label: "Dashboard" }]
+    : navLinks;
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -163,7 +169,7 @@ export default function Navbar() {
           aria-label="Primary"
           className="hidden items-center gap-0.5 lg:flex"
         >
-          {navLinks.map((link) => (
+          {visibleNavLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -317,7 +323,7 @@ export default function Navbar() {
           className="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-[#075b55]/10 bg-white px-4 pt-3 pb-6 lg:hidden dark:border-white/10 dark:bg-[#081715]"
         >
           <nav aria-label="Mobile primary" className="flex flex-col gap-1">
-            {navLinks.map((link) => (
+            {visibleNavLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

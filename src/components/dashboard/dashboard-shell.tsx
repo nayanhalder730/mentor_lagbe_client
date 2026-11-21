@@ -136,6 +136,11 @@ const navByRole: Record<DashboardRole, NavItem[]> = {
       icon: BookOpen,
     },
     {
+      href: "/dashboard/admin/applications",
+      label: "Applications",
+      icon: FileText,
+    },
+    {
       href: "/dashboard/admin/transactions",
       label: "Transactions",
       icon: Receipt,

@@ -11,6 +11,7 @@ import {
   MapPin,
   RefreshCw,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 
@@ -49,6 +50,7 @@ import {
 } from "@/components/ui/table";
 import { isApiError } from "@/lib/api";
 import {
+  adminDeleteTuition,
   listAdminTuitions,
   reviewTuitionApproval,
   setTuitionActive,
@@ -143,6 +145,7 @@ export default function AdminTuitionsView() {
     error: null,
   });
   const [action, setAction] = useState<ModerationAction | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Tuition | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -264,6 +267,24 @@ export default function AdminTuitionsView() {
       if (shouldRefreshAfterError(error)) {
         setReloadKey((key) => key + 1);
       }
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || processingId) return;
+
+    setProcessingId(deleteTarget.id);
+
+    try {
+      await adminDeleteTuition(deleteTarget.id);
+      toast.success("Tuition deleted successfully");
+      setDeleteTarget(null);
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      toast.error(describeError(error));
+      setReloadKey((key) => key + 1);
     } finally {
       setProcessingId(null);
     }
@@ -588,7 +609,21 @@ export default function AdminTuitionsView() {
                             {formatDate(tuition.createdAt)}
                           </TableCell>
                           <TableCell className="pr-5 text-right">
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
                             {moderationButtons(tuition)}
+                            <Button
+                              type="button"
+                              size="xs"
+                              variant="ghost"
+                              disabled={processingId !== null}
+                              onClick={() => setDeleteTarget(tuition)}
+                              className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                              aria-label={`Delete ${tuition.title}`}
+                            >
+                              <Trash2 aria-hidden="true" />
+                              Delete
+                            </Button>
+                          </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -676,7 +711,21 @@ export default function AdminTuitionsView() {
                       </div>
 
                       <div className="mt-3 text-right">
-                        {moderationButtons(tuition)}
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                            {moderationButtons(tuition)}
+                            <Button
+                              type="button"
+                              size="xs"
+                              variant="ghost"
+                              disabled={processingId !== null}
+                              onClick={() => setDeleteTarget(tuition)}
+                              className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                              aria-label={`Delete ${tuition.title}`}
+                            >
+                              <Trash2 aria-hidden="true" />
+                              Delete
+                            </Button>
+                          </div>
                       </div>
                     </li>
                   ))}
@@ -762,6 +811,36 @@ export default function AdminTuitionsView() {
               onClick={handleConfirmAction}
             >
               {processingId ? "Saving…" : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !processingId) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this tuition?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `"${deleteTarget.title}" and its applications and saved-tuition references will be removed from the database. This cannot be undone.`
+                : "This tuition will be permanently removed."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processingId !== null}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={processingId !== null}
+              onClick={handleConfirmDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {processingId ? "Deleting…" : "Delete tuition"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

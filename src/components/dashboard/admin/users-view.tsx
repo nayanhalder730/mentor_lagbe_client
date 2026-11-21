@@ -7,6 +7,7 @@ import {
   ChevronRight,
   RefreshCw,
   Search,
+  Trash2,
   UserRound,
   Users,
   X,
@@ -46,7 +47,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { isApiError } from "@/lib/api";
-import { listUsers, updateUserRole } from "@/lib/api-endpoints";
+import { deleteUser, listUsers, updateUserRole } from "@/lib/api-endpoints";
 import type { UserRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import type { AssignableRole, User, UserListData } from "@/types/api";
@@ -171,6 +172,7 @@ export default function UsersView({
     error: null,
   });
   const [roleTarget, setRoleTarget] = useState<RoleTarget | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -293,6 +295,24 @@ export default function UsersView({
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || processingId) return;
+
+    setProcessingId(deleteTarget.id);
+
+    try {
+      await deleteUser(deleteTarget.id);
+      toast.success(`${deleteTarget.name} was deleted. Payment history was preserved.`);
+      setDeleteTarget(null);
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      toast.error(describeRoleError(error));
+      setReloadKey((key) => key + 1);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const users = useMemo(
     () => (state.status === "ready" ? state.data.users : []),
     [state],
@@ -345,6 +365,18 @@ export default function UsersView({
             Make {titleCase(role)}
           </Button>
         ))}
+        <Button
+          type="button"
+          size="xs"
+          variant="ghost"
+          disabled={processingId !== null}
+          onClick={() => setDeleteTarget(user)}
+          className="text-red-600 hover:text-red-700 dark:text-red-400"
+          aria-label={`Delete ${user.name}`}
+        >
+          <Trash2 aria-hidden="true" />
+          Delete
+        </Button>
       </div>
     );
   };
@@ -643,6 +675,36 @@ export default function UsersView({
               onClick={handleConfirmRoleChange}
             >
               {processingId ? "Saving…" : "Change role"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !processingId) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `${deleteTarget.name} (${deleteTarget.email}) will be removed along with their tuitions, related applications and saved-tuition references. Payment history is preserved. This cannot be undone.`
+                : "This account will be permanently removed."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processingId !== null}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={processingId !== null}
+              onClick={handleConfirmDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {processingId ? "Deleting…" : "Delete account"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

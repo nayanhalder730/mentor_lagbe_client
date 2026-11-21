@@ -198,6 +198,10 @@ export type TutorApplicationListQuery = ApplicationListQuery & {
   status?: ApplicationStatus;
 };
 
+export type AdminApplicationListQuery = ApplicationListQuery & {
+  status?: ApplicationStatus;
+};
+
 export type CreateApplicationInput = {
   tuitionId: string;
   preferredSchedule: string;

@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import type {
+  AdminApplicationListQuery,
   ApiMessageResponse,
   ApiSuccessResponse,
   Application,
@@ -192,6 +193,14 @@ export function createApplication(input: CreateApplicationInput) {
   }).then((response) => response.data);
 }
 
+/** Admin-only view of every application in the platform. */
+export function listAllApplications(query?: AdminApplicationListQuery) {
+  return apiFetch<ApiSuccessResponse<ApplicationListData>>(
+    "/api/admin/applications",
+    { query },
+  ).then((response) => response.data);
+}
+
 export function listTutorApplications(query?: TutorApplicationListQuery) {
   return apiFetch<ApiSuccessResponse<ApplicationListData>>(
     "/api/applications/tutor",
@@ -265,11 +274,25 @@ export function updateUserRole(id: string, role: AssignableRole) {
   ).then((response) => response.data);
 }
 
+/** Admin-only account deletion. Payment history is preserved by the server. */
+export async function deleteUser(id: string): Promise<void> {
+  await apiFetch<ApiMessageResponse>(resourcePath("/api/users", id), {
+    method: "DELETE",
+  });
+}
+
 export function listAdminTuitions(query?: AdminTuitionListQuery) {
   return apiFetch<ApiSuccessResponse<TuitionListData>>(
     "/api/admin/tuitions",
     { query },
   ).then((response) => response.data);
+}
+
+/** Admin-only removal of an inappropriate tuition post. */
+export async function adminDeleteTuition(id: string): Promise<void> {
+  await apiFetch<ApiMessageResponse>(resourcePath("/api/admin/tuitions", id), {
+    method: "DELETE",
+  });
 }
 
 export function reviewTuitionApproval(
