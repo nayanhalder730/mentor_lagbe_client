@@ -25,6 +25,7 @@ import {
   StatusBadge,
   titleCase,
 } from "@/components/dashboard/overview/overview-primitives";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -429,17 +430,38 @@ export default function TuitionDetailsView({
                     </div>
 
                     <div className="mt-5 rounded-xl border border-[#087f75]/15 bg-[#087f75]/5 p-4 dark:border-[#087f75]/25">
-                      <p className="flex items-center gap-2 text-xs text-[#075b55]/60 dark:text-[#f5f5ed]/60">
-                        <UserRound className="size-4" aria-hidden="true" />
-                        Taught by{" "}
-                        <span className="font-semibold text-[#075b55] dark:text-[#f5f5ed]">
-                          {details.tuition.tutorName}
-                        </span>
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-11 shrink-0">
+                          {details.tuition.tutorImage ? (
+                            <AvatarImage
+                              src={details.tuition.tutorImage}
+                              alt={details.tuition.tutorName}
+                            />
+                          ) : null}
+                          <AvatarFallback className="bg-[#087f75]/15 text-sm font-bold text-[#075b55] dark:bg-[#087f75]/25 dark:text-[#7fe0d2]">
+                            {details.tuition.tutorName.trim().charAt(0).toUpperCase() || (
+                              <UserRound className="size-4" aria-hidden="true" />
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="text-xs text-[#075b55]/60 dark:text-[#f5f5ed]/60">
+                            Taught by
+                          </p>
+                          <p className="truncate text-sm font-bold text-[#075b55] dark:text-[#f5f5ed]">
+                            {details.tuition.tutorName}
+                          </p>
+                        </div>
+                      </div>
                       {details.tuition.tutorEmail ? (
-                        <p className="mt-1.5 flex items-center gap-2 truncate text-xs text-[#075b55]/60 dark:text-[#f5f5ed]/60">
+                        <p className="mt-3 flex items-center gap-2 truncate text-xs text-[#075b55]/60 dark:text-[#f5f5ed]/60">
                           <Mail className="size-4 shrink-0" aria-hidden="true" />
                           {details.tuition.tutorEmail}
+                        </p>
+                      ) : null}
+                      {details.tuition.tutorBio ? (
+                        <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-[#075b55]/70 dark:text-[#f5f5ed]/65">
+                          {details.tuition.tutorBio}
                         </p>
                       ) : null}
                     </div>

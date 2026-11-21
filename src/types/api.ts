@@ -108,6 +108,9 @@ export type Tuition = {
   description: string;
   tutorName: string;
   tutorEmail: string;
+  /** Public tutor profile details, available on the detail endpoint. */
+  tutorImage?: string | null;
+  tutorBio?: string | null;
   approvalStatus: ApprovalStatus;
   isActive: boolean;
   createdAt: string | null;
@@ -120,6 +123,11 @@ export type TuitionListData = {
 
 export type MyTuitionListData = {
   tuitions: Tuition[];
+};
+
+export type TuitionFilterOptions = {
+  subjects: string[];
+  classLevels: string[];
 };
 
 export type TuitionListQuery = {

@@ -19,9 +19,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isApiError } from "@/lib/api";
-import { listTuitions } from "@/lib/api-endpoints";
+import { getTuitionFilterOptions, listTuitions } from "@/lib/api-endpoints";
 import type {
   Tuition,
+  TuitionFilterOptions,
   TuitionListData,
   TuitionListQuery,
   TuitionMode,
@@ -145,10 +146,12 @@ function ResultsSkeleton() {
 
 function FilterPanel({
   initial,
+  options,
   onApply,
   onClear,
 }: {
   initial: BrowseFilters;
+  options: TuitionFilterOptions;
   onApply: (changes: Record<string, string | number>) => void;
   onClear: () => void;
 }) {
@@ -162,6 +165,12 @@ function FilterPanel({
     maxFee: initial.maxFee,
   });
   const [open, setOpen] = useState(false);
+  const [feeError, setFeeError] = useState<string | null>(null);
+
+  const withCurrent = (values: string[], current: string) =>
+    current && !values.some((value) => value.toLowerCase() === current.toLowerCase())
+      ? [current, ...values]
+      : values;
 
   const update = (key: keyof DraftFilters, value: string) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -169,6 +178,17 @@ function FilterPanel({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (
+      draft.minFee !== "" &&
+      draft.maxFee !== "" &&
+      Number(draft.minFee) > Number(draft.maxFee)
+    ) {
+      setFeeError("Minimum fee cannot be greater than maximum fee.");
+      return;
+    }
+
+    setFeeError(null);
 
     onApply({
       search: draft.search.trim().slice(0, TEXT_LIMITS.search),
@@ -251,24 +271,36 @@ function FilterPanel({
 
           <div className="space-y-1.5">
             <Label htmlFor="browse-subject">Subject</Label>
-            <Input
+            <select
               id="browse-subject"
               value={draft.subject}
-              maxLength={TEXT_LIMITS.subject}
               onChange={(event) => update("subject", event.target.value)}
-              placeholder="e.g. Mathematics"
-            />
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            >
+              <option value="">All subjects</option>
+              {withCurrent(options.subjects, draft.subject).map((subject) => (
+                <option key={subject} value={subject}>
+                  {subject}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="browse-class-level">Class level</Label>
-            <Input
+            <select
               id="browse-class-level"
               value={draft.classLevel}
-              maxLength={TEXT_LIMITS.classLevel}
               onChange={(event) => update("classLevel", event.target.value)}
-              placeholder="e.g. HSC"
-            />
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            >
+              <option value="">All class levels</option>
+              {withCurrent(options.classLevels, draft.classLevel).map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">
@@ -322,6 +354,12 @@ function FilterPanel({
               />
             </div>
           </div>
+
+          {feeError ? (
+            <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+              {feeError}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-6 flex flex-col gap-2">
@@ -351,6 +389,10 @@ export default function BrowseTuitionsView() {
 
   const filters = useMemo(() => parseFilters(queryString), [queryString]);
   const [reloadKey, setReloadKey] = useState(0);
+  const [filterOptions, setFilterOptions] = useState<TuitionFilterOptions>({
+    subjects: [],
+    classLevels: [],
+  });
   const [state, setState] = useState<ListState>({
     status: "loading",
     data: null,
@@ -391,6 +433,22 @@ export default function BrowseTuitionsView() {
       active = false;
     };
   }, [query, reloadKey]);
+
+  useEffect(() => {
+    let active = true;
+
+    getTuitionFilterOptions()
+      .then((options) => {
+        if (active) setFilterOptions(options);
+      })
+      .catch(() => {
+        // Filters remain usable with the current URL value as their only option.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Keep the URL canonical so invalid values never reach the backend and
   // back/forward navigation restores a clean, shareable state.
@@ -491,6 +549,7 @@ export default function BrowseTuitionsView() {
           <FilterPanel
             key={queryString}
             initial={filters}
+            options={filterOptions}
             onApply={applyChanges}
             onClear={handleClearAll}
           />

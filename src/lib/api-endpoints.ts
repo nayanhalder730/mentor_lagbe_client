@@ -20,6 +20,7 @@ import type {
   SavedTuitionMutationData,
   SetTuitionActiveInput,
   Tuition,
+  TuitionFilterOptions,
   TuitionListData,
   TuitionListQuery,
   AdminTuitionListQuery,
@@ -101,6 +102,14 @@ export function listTuitions(query?: TuitionListQuery) {
     query,
     auth: false,
   }).then((response) => response.data);
+}
+
+/** Public filter options derived from approved, active tuitions only. */
+export function getTuitionFilterOptions() {
+  return apiFetch<ApiSuccessResponse<TuitionFilterOptions>>(
+    "/api/tuitions/filters",
+    { auth: false }
+  ).then((response) => response.data);
 }
 
 /** Public tuition detail. No Bearer token is attached. */
