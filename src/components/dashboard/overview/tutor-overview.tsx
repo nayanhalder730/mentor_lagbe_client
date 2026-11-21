@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Activity,
   BookOpen,
@@ -8,9 +9,11 @@ import {
   Clock,
   FileText,
   Users,
+  Wallet,
 } from "lucide-react";
 
 import { useDashboardOverview } from "@/hooks/use-dashboard-overview";
+import { getMyProfile } from "@/lib/api-endpoints";
 
 import {
   ActivityItem,
@@ -31,6 +34,23 @@ import {
 
 export default function TutorOverview() {
   const { status, data, error, retry } = useDashboardOverview("tutor");
+  const [plan, setPlan] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    getMyProfile()
+      .then((profile) => {
+        if (active) setPlan(profile.plan);
+      })
+      .catch(() => {
+        if (active) setPlan(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -111,6 +131,13 @@ export default function TutorOverview() {
               value={data.stats.rejectedApplications}
               icon={CircleX}
               tone="red"
+            />
+            <StatCard
+              label="Current plan"
+              value={plan ? titleCase(plan) : "—"}
+              icon={Wallet}
+              tone="gold"
+              hint="Verified from your profile"
             />
           </StatGroup>
 

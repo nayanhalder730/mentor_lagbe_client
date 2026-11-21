@@ -2,8 +2,7 @@
 
 Next.js frontend for **MentorLagbe**, a role-based tuition marketplace connecting students with tutors through approved tuition listings, applications, admin moderation and Pro subscriptions.
 
-> Client live URL: **NOT PROVIDED — no verified live frontend URL exists in the repository.**
-> Add the real deployed URL only after deployment is confirmed.
+> Client live URL: https://mentor-lagbe-client-dun.vercel.app
 
 ## Repository URLs
 
@@ -18,7 +17,7 @@ Next.js frontend for **MentorLagbe**, a role-based tuition marketplace connectin
 | --- | --- |
 | Admin credentials | **NOT PROVIDED** — no verified admin credentials exist in the repository. |
 | Tutor test credentials | **NOT PROVIDED** — no verified tutor credentials exist in the repository. |
-| Client live URL | **NOT PROVIDED** — no verified deployment URL exists in the repository. |
+| Client live URL | https://mentor-lagbe-client-dun.vercel.app |
 | Client repository | https://github.com/nayanhalder730/mentor_lagbe_client |
 | Server repository | https://github.com/nayanhalder730/mentor_lagbe_server |
 

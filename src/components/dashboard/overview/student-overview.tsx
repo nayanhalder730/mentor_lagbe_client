@@ -1,8 +1,10 @@
 "use client";
 
-import { CircleCheck, CircleX, Clock, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CircleCheck, CircleX, Clock, FileText, Wallet } from "lucide-react";
 
 import { useDashboardOverview } from "@/hooks/use-dashboard-overview";
+import { getMyProfile } from "@/lib/api-endpoints";
 
 import {
   ActivityItem,
@@ -23,6 +25,23 @@ import {
 
 export default function StudentOverview() {
   const { status, data, error, retry } = useDashboardOverview("student");
+  const [plan, setPlan] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    getMyProfile()
+      .then((profile) => {
+        if (active) setPlan(profile.plan);
+      })
+      .catch(() => {
+        if (active) setPlan(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -69,6 +88,13 @@ export default function StudentOverview() {
               icon={CircleX}
               tone="red"
               hint="Not selected"
+            />
+            <StatCard
+              label="Current plan"
+              value={plan ? titleCase(plan) : "—"}
+              icon={Wallet}
+              tone="gold"
+              hint="Verified from your profile"
             />
           </StatGrid>
 

@@ -89,7 +89,7 @@ export type SavedTuitionListQuery = {
 };
 
 /** Roles an admin may assign through the role-change endpoint. */
-export type AssignableRole = Extract<UserRole, "student" | "tutor">;
+export type AssignableRole = UserRole;
 
 /* -------------------------------------------------------------------------- */
 /* Tuitions                                                                   */

@@ -138,13 +138,10 @@ export default function PricingView() {
         if (!active) return;
 
         setProfilePlan(null);
-
-        if (checkoutSignal === "returned") {
-          setNotice({
-            tone: "warning",
-            text: "We could not verify your plan right now. Please check again shortly.",
-          });
-        }
+        setNotice({
+          tone: "warning",
+          text: "Could not verify your current plan from the server. Please try again.",
+        });
       } finally {
         if (active) setProfileLoading(false);
       }
@@ -157,9 +154,9 @@ export default function PricingView() {
     };
   }, [userId, checkoutSignal, refetch]);
 
-  const sessionPlan: Plan | null =
-    userId && session?.user.plan === "pro" ? "pro" : userId ? "free" : null;
-  const currentPlan: Plan | null = profilePlan ?? sessionPlan;
+  // Only the backend-verified profile plan is authoritative. The session user
+  // object may be cached and stale after a webhook changes the database.
+  const currentPlan: Plan | null = profilePlan;
 
   const refreshPlan = async () => {
     try {

@@ -243,15 +243,16 @@ export default function UsersView({
     setPage(nextPage);
   };
 
-  const handleRoleRequest = (user: User) => {
-    if (processingId || user.role === "admin" || user.id === currentUserId) {
+  const handleRoleRequest = (user: User, role: AssignableRole) => {
+    if (
+      processingId ||
+      user.id === currentUserId ||
+      user.role === role
+    ) {
       return;
     }
 
-    const nextRole: AssignableRole =
-      user.role === "student" ? "tutor" : "student";
-
-    setRoleTarget({ user, role: nextRole });
+    setRoleTarget({ user, role });
   };
 
   const handleConfirmRoleChange = async () => {
@@ -323,30 +324,28 @@ export default function UsersView({
       );
     }
 
-    if (user.role === "admin") {
-      return (
-        <span className="text-xs text-[#075b55]/40 dark:text-[#f5f5ed]/35">
-          —
-        </span>
-      );
-    }
-
-    const nextRole: AssignableRole =
-      user.role === "student" ? "tutor" : "student";
+    const options: AssignableRole[] = ["student", "tutor", "admin"].filter(
+      (role) => role !== user.role
+    ) as AssignableRole[];
 
     return (
-      <Button
-        type="button"
-        size="xs"
-        variant="outline"
-        disabled={processingId !== null}
-        onClick={() => handleRoleRequest(user)}
-      >
-        {processingId === user.id ? (
-          <RefreshCw className="animate-spin" aria-hidden="true" />
-        ) : null}
-        Make {titleCase(nextRole)}
-      </Button>
+      <div className="flex flex-wrap justify-end gap-1">
+        {options.map((role) => (
+          <Button
+            key={role}
+            type="button"
+            size="xs"
+            variant="outline"
+            disabled={processingId !== null}
+            onClick={() => handleRoleRequest(user, role)}
+          >
+            {processingId === user.id ? (
+              <RefreshCw className="animate-spin" aria-hidden="true" />
+            ) : null}
+            Make {titleCase(role)}
+          </Button>
+        ))}
+      </div>
     );
   };
 
@@ -354,7 +353,7 @@ export default function UsersView({
     <div className="space-y-6 sm:space-y-8">
       <PageHeading
         title="Users"
-        description="Find registered users and manage student/tutor roles. Admin access is never changed here."
+        description="Find registered users and manage student, tutor, and admin roles."
       />
 
       {state.status === "loading" ? <UsersSkeleton /> : null}
@@ -631,7 +630,7 @@ export default function UsersView({
             <AlertDialogTitle>Change this user&apos;s role?</AlertDialogTitle>
             <AlertDialogDescription>
               {roleTarget
-                ? `${roleTarget.user.name} will change from ${roleTarget.user.role} to ${roleTarget.role}. Admin accounts are never changed here.`
+                ? `${roleTarget.user.name} will change from ${roleTarget.user.role} to ${roleTarget.role}. The last admin account cannot be demoted.`
                 : "This user's role will be updated."}
             </AlertDialogDescription>
           </AlertDialogHeader>
