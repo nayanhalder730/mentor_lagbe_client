@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Bookmark,
   BookOpen,
@@ -12,8 +13,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   PlusCircle,
   Receipt,
+  Sun,
   UserRound,
   Users,
   X,
@@ -21,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTheme } from "@/components/theme-provider";
 import { signOut } from "@/lib/auth-client";
 import type { UserRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -351,6 +355,7 @@ export default function DashboardShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -381,6 +386,7 @@ export default function DashboardShell({
 
     try {
       await signOut();
+      toast.success("Signed out successfully.");
     } finally {
       closeSidebar();
       router.replace("/sign-in");
@@ -469,6 +475,22 @@ export default function DashboardShell({
 
             <div className="flex items-center gap-2">
               <RoleBadge role={role} className="hidden sm:inline-flex" />
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={
+                  theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+                }
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                className="flex size-9 items-center justify-center rounded-full border border-[#075b55]/15 text-[#075b55] transition-colors hover:bg-[#087f75]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087f75]/50 dark:border-white/15 dark:text-[#f5f5ed] dark:hover:bg-white/5"
+              >
+                {theme === "dark" ? (
+                  <Sun className="size-4" aria-hidden="true" />
+                ) : (
+                  <Moon className="size-4" aria-hidden="true" />
+                )}
+              </button>
 
               <Link
                 href="/dashboard/profile"

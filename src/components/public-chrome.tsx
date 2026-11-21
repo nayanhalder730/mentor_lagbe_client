@@ -18,19 +18,6 @@ const navLinks = [
 const CLIENT_REPOSITORY_URL =
   "https://github.com/nayanhalder730/mentor_lagbe_client";
 
-function XLogo({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.215-6.822L4.92 21.75H1.61l7.73-8.835L1.064 2.25h6.825l4.713 6.231 5.642-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
-    </svg>
-  );
-}
-
 const footerLinkClass =
   "rounded transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7f3d0]/50";
 
@@ -90,27 +77,24 @@ function Footer() {
 
         <div className="space-y-6">
           <div>
-            <h3 className="text-sm font-semibold text-white">Contact</h3>
-            <ul className="mt-3 space-y-2 text-xs leading-relaxed">
-              <li>Email: TODO — add verified support email</li>
-              <li>Phone: TODO — add verified contact number</li>
-              <li>Address: TODO — add verified address</li>
+            <h3 className="text-sm font-semibold text-white">Legal</h3>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li>
+                <Link href="/terms" className={footerLinkClass}>
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className={footerLinkClass}>
+                  Privacy Policy
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-white">Follow</h3>
+            <h3 className="text-sm font-semibold text-white">Source</h3>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
-              <span
-                aria-label="X profile URL pending"
-                title="TODO: add verified X profile URL"
-                aria-disabled="true"
-                className="flex size-9 cursor-not-allowed items-center justify-center rounded-full border border-white/15 text-white/50"
-              >
-                <XLogo className="size-4" />
-              </span>
-              <span className="text-[11px] text-white/45">X: TODO</span>
-
               <a
                 href={CLIENT_REPOSITORY_URL}
                 target="_blank"

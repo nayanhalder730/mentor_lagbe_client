@@ -15,13 +15,15 @@ Next.js frontend for **MentorLagbe**, a role-based tuition marketplace connectin
 
 | Item | Value |
 | --- | --- |
-| Admin credentials | **NOT PROVIDED** — no verified admin credentials exist in the repository. |
-| Tutor test credentials | **NOT PROVIDED** — no verified tutor credentials exist in the repository. |
+| Admin credentials | **OWNER TO PROVIDE BEFORE SUBMISSION** — no verified admin account exists in this repository. |
+| Tutor test credentials | **OWNER TO PROVIDE BEFORE SUBMISSION** — no verified tutor demo account exists in this repository. |
 | Client live URL | https://mentor-lagbe-client-dun.vercel.app |
 | Client repository | https://github.com/nayanhalder730/mentor_lagbe_client |
 | Server repository | https://github.com/nayanhalder730/mentor_lagbe_server |
 
 Do not invent credentials or URLs for submission; add only verified values.
+
+**What the owner must supply:** a real admin email + password (an existing user whose `role` is `admin` in the `user` collection) and, optionally, a tutor demo email + password. No personal or production password is stored in this repository. If a safe demo admin cannot be provisioned, leave these rows as `OWNER TO PROVIDE` and explain the omission to the reviewer rather than publishing a fabricated login.
 
 ---
 
@@ -140,7 +142,11 @@ There is **no** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` in this project. Checkout s
 3. Restart the dev server after changing public environment variables.
 4. Selected images are validated (type and 32 MB limit) and uploaded directly from the browser through `src/lib/imgbb.ts`. The resulting public URL is stored as `image` (profile) or `bannerImage` (tuition). Image files are never sent to Express.
 
-If the key is missing, the UI shows a configuration message; no fake key is used.
+If the key is missing, the UI shows a configuration message; no fake key is used. The variable name is `NEXT_PUBLIC_IMGBB_API_KEY` everywhere (including `.env.example`); older `IMAGEBB_API_KEY` values must be renamed.
+
+### Password reset availability
+
+Self-service password reset is **not enabled**. Better Auth email/password login works, but no outbound email provider or `sendResetPassword` handler is configured, so reset links cannot be delivered. `/forgot-password` explains this honestly instead of simulating a sent email. To enable it, configure an email provider plus the Better Auth reset handler, then wire the page to `authClient.requestPasswordReset`.
 
 ---
 

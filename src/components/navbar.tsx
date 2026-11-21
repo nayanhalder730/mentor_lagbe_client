@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   ChevronDown,
   LayoutDashboard,
@@ -123,6 +124,7 @@ export default function Navbar() {
 
     try {
       await signOut();
+      toast.success("Signed out successfully.");
     } finally {
       setOpen(false);
       router.push("/sign-in");

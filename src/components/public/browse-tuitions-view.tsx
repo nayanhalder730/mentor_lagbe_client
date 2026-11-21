@@ -77,6 +77,26 @@ function readPage(value: string | null) {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : 1;
 }
 
+type PageItem = number | "ellipsis-start" | "ellipsis-end";
+
+/** Compact page list: first, last, and a window around the current page. */
+function buildPageItems(current: number, total: number): PageItem[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, index) => index + 1);
+  }
+
+  const items: PageItem[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  if (start > 2) items.push("ellipsis-start");
+  for (let page = start; page <= end; page += 1) items.push(page);
+  if (end < total - 1) items.push("ellipsis-end");
+  items.push(total);
+
+  return items;
+}
+
 function parseFilters(queryString: string): BrowseFilters {
   const params = new URLSearchParams(queryString);
   const mode = params.get("mode");
@@ -544,7 +564,7 @@ export default function BrowseTuitionsView() {
                   <p className="text-xs text-[#075b55]/55 dark:text-[#f5f5ed]/50">
                     Page {pagination.page} of {pagination.totalPages}
                   </p>
-                  <div className="flex gap-2">
+                  <nav aria-label="Tuition pages" className="flex flex-wrap items-center gap-1.5">
                     <Button
                       type="button"
                       variant="outline"
@@ -557,6 +577,39 @@ export default function BrowseTuitionsView() {
                       <ChevronLeft aria-hidden="true" />
                       Previous
                     </Button>
+
+                    {buildPageItems(
+                      pagination.page,
+                      pagination.totalPages,
+                    ).map((item) =>
+                      typeof item === "number" ? (
+                        <Button
+                          key={item}
+                          type="button"
+                          size="sm"
+                          variant={item === pagination.page ? "default" : "outline"}
+                          aria-current={item === pagination.page ? "page" : undefined}
+                          aria-label={`Go to page ${item}`}
+                          className={
+                            item === pagination.page
+                              ? "bg-[#075b55] text-white hover:bg-[#0b6b62]"
+                              : undefined
+                          }
+                          onClick={() => applyChanges({ page: item })}
+                        >
+                          {item}
+                        </Button>
+                      ) : (
+                        <span
+                          key={item}
+                          aria-hidden="true"
+                          className="px-1 text-xs text-[#075b55]/45 dark:text-[#f5f5ed]/40"
+                        >
+                          …
+                        </span>
+                      ),
+                    )}
+
                     <Button
                       type="button"
                       variant="outline"
@@ -569,7 +622,7 @@ export default function BrowseTuitionsView() {
                       Next
                       <ChevronRight aria-hidden="true" />
                     </Button>
-                  </div>
+                  </nav>
                 </div>
               ) : null}
             </>

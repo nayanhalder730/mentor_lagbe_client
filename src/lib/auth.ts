@@ -4,7 +4,24 @@ import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 
 const client = new MongoClient(process.env.MONGODB_URI as string);
-const db = client.db(process.env.MONGODB_DB_NAME ?? "mentor_lagbe");
+
+/**
+ * Environment values pasted into hosting dashboards can retain inline
+ * comments (for example `mentor_lagbe # Name of your MongoDB database`).
+ * dotenv strips those locally, but Vercel does not, and MongoDB then rejects
+ * the name outright, making every DB-backed auth endpoint return 500.
+ */
+function resolveDatabaseName(): string {
+  const raw = process.env.MONGODB_DB_NAME;
+
+  if (typeof raw !== "string") return "mentor_lagbe";
+
+  const cleaned = raw.replace(/\s+#.*$/, "").trim();
+
+  return cleaned || "mentor_lagbe";
+}
+
+const db = client.db(resolveDatabaseName());
 
 // Social login is optional — only register providers when credentials exist.
 const socialProviders = {
