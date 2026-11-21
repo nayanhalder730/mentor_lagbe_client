@@ -27,6 +27,38 @@ import { authClient } from "@/lib/auth-client";
 type FormErrors = Partial<Record<"email" | "password", string>>;
 
 /**
+ * HTTP/validation failures are returned in Better Auth's `error` field and
+ * must never be retried. Only a thrown fetch/network failure is transient.
+ */
+function isTransientAuthError(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+
+  if (error !== null && typeof error === "object" && "name" in error) {
+    const name = (error as { name?: unknown }).name;
+    if (name === "AbortError" || name === "TypeError") return true;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  return /fetch|network|abort|timeout|timed out/i.test(message);
+}
+
+function describeAuthError(error: unknown): string {
+  if (isTransientAuthError(error)) {
+    return "We couldn't reach the sign-in service. Check your connection and try again.";
+  }
+
+  if (error !== null && typeof error === "object") {
+    const message = (error as { message?: unknown }).message;
+
+    if (typeof message === "string" && message.trim() !== "") {
+      return message.trim();
+    }
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
+/**
  * Accept only same-origin, root-relative paths. This is untrusted query input:
  * no protocol-relative URLs, absolute URLs, backslashes, encoded separators,
  * control characters or malformed values are allowed. Query strings are kept.
@@ -349,22 +381,32 @@ function SignInPageContent() {
     setIsLoading(true);
 
     try {
-      const { error } = await authClient.signIn.email({
+      const credentials = {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         rememberMe,
+      };
+
+      // Better Auth returns validation/credential errors in `error`, but a
+      // network-level failure (dropped connection, cold start, aborted fetch)
+      // is thrown. Retry a transient throw once before giving up.
+      const result = await authClient.signIn.email(credentials).catch(async (error) => {
+        if (!isTransientAuthError(error)) throw error;
+        return authClient.signIn.email(credentials);
       });
 
-      if (error) {
-        toast.error(error.message || "Invalid email or password.");
+      if (result.error) {
+        toast.error(result.error.message || "Invalid email or password.");
         return;
       }
 
       toast.success("Signed in successfully. Welcome back!");
       router.push(callbackPath);
       router.refresh();
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      // Surface the real cause instead of hiding it behind a generic message.
+      console.error("Sign-in request failed:", error);
+      toast.error(describeAuthError(error));
     } finally {
       setIsLoading(false);
     }
