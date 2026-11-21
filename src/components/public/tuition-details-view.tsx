@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -51,6 +52,7 @@ type DetailsState =
 type ApplicationState =
   | { status: "loading" }
   | { status: "error"; error: string }
+  | { status: "limitReached"; error: string }
   | { status: "applied"; application: Application | null }
   | { status: "notApplied" };
 
@@ -72,6 +74,16 @@ function describeError(error: unknown) {
   }
 
   return "Your request could not be completed. Please try again.";
+}
+
+function isApplicationLimitError(error: unknown) {
+  if (!isApiError(error)) return false;
+
+  return (
+    error.code === "FREE_APPLICATION_LIMIT" ||
+    (error.status === 403 &&
+      /at most 2 applications|upgrade to student pro/i.test(error.message))
+  );
 }
 
 function validateApplicationForm(form: ApplicationForm): string | null {
@@ -153,6 +165,7 @@ export default function TuitionDetailsView({
 }: {
   tuitionId: string;
 }) {
+  const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
   const [reloadKey, setReloadKey] = useState(0);
   const [details, setDetails] = useState<DetailsState>({
@@ -264,12 +277,15 @@ export default function TuitionDetailsView({
       setApplication({ status: "applied", application: created });
       setForm(EMPTY_FORM);
       toast.success("Application submitted successfully");
+      router.refresh();
     } catch (error) {
       const message = describeError(error);
 
       toast.error(message);
 
-      if (isApiError(error) && (error.status === 409 || error.status === 404)) {
+      if (isApplicationLimitError(error)) {
+        setApplication({ status: "limitReached", error: message });
+      } else if (isApiError(error) && (error.status === 409 || error.status === 404)) {
         setApplication({ status: "loading" });
         setApplicationReloadKey((key) => key + 1);
       }
@@ -498,6 +514,21 @@ export default function TuitionDetailsView({
                           Admins cannot apply to tuitions. Admin accounts are
                           for moderation only.
                         </p>
+                      </Panel>
+                    ) : application.status === "limitReached" ? (
+                      <Panel
+                        title="Free application limit reached"
+                        description={application.error}
+                      >
+                        <Link
+                          href="/pricing"
+                          className={buttonVariants({
+                            className: "w-full bg-[#075b55] text-white hover:bg-[#0b6b62]",
+                          })}
+                        >
+                          Upgrade to Student Pro
+                          <ArrowRight aria-hidden="true" />
+                        </Link>
                       </Panel>
                     ) : application.status === "error" ? (
                       <Panel

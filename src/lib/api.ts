@@ -38,11 +38,13 @@ export type ApiFetchOptions = {
  */
 export class ApiError extends Error {
   readonly status: number;
+  readonly code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -198,6 +200,16 @@ function readSafeMessage(payload: unknown): string | null {
   return null;
 }
 
+function readSafeCode(payload: unknown): string | null {
+  if (payload === null || typeof payload !== "object" || !("code" in payload)) {
+    return null;
+  }
+
+  const code = (payload as { code?: unknown }).code;
+
+  return typeof code === "string" && code.trim() !== "" ? code.trim() : null;
+}
+
 function buildApiError(status: number, parsed: ParsedBody): ApiError {
   // Never surface proxy/framework internals for server-side failures.
   if (status >= 500) {
@@ -208,10 +220,12 @@ function buildApiError(status: number, parsed: ParsedBody): ApiError {
   }
 
   const message = parsed.ok ? readSafeMessage(parsed.value) : null;
+  const code = parsed.ok ? readSafeCode(parsed.value) ?? undefined : undefined;
 
   return new ApiError(
     status,
     message ?? `Request failed with status ${status}.`,
+    code,
   );
 }
 
