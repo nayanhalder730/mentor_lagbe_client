@@ -14,6 +14,8 @@ import {
   LogOut,
   Menu,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   PlusCircle,
   Receipt,
   Sun,
@@ -235,6 +237,7 @@ function SidebarContent({
   onNavigate,
   onSignOut,
   signingOut,
+  collapsed = false,
 }: {
   role: DashboardRole;
   user: DashboardUser;
@@ -242,6 +245,7 @@ function SidebarContent({
   onNavigate: () => void;
   onSignOut: () => void;
   signingOut: boolean;
+  collapsed?: boolean;
 }) {
   const items = navByRole[role];
   const homeHref = items[0]?.href ?? "/dashboard";
@@ -261,13 +265,23 @@ function SidebarContent({
             height={36}
             className="h-9 w-9 object-contain"
           />
-          <span className="text-lg font-extrabold tracking-tight text-[#075b55] dark:text-[#f5f5ed]">
+          <span
+            className={cn(
+              "text-lg font-extrabold tracking-tight text-[#075b55] dark:text-[#f5f5ed]",
+              collapsed && "sr-only"
+            )}
+          >
             Mentor
             <span className="text-[#087f75] dark:text-[#7fe0d2]">Lagbe</span>
           </span>
         </Link>
 
-        <p className="mt-3 text-xs font-medium tracking-wide text-[#075b55]/55 uppercase dark:text-[#f5f5ed]/50">
+        <p
+          className={cn(
+            "mt-3 text-xs font-medium tracking-wide text-[#075b55]/55 uppercase dark:text-[#f5f5ed]/50",
+            collapsed && "sr-only"
+          )}
+        >
           {roleDetails[role].workspace}
         </p>
       </div>
@@ -287,20 +301,22 @@ function SidebarContent({
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087f75]/50",
+                collapsed && "justify-center px-0",
                 active
                   ? "bg-[#087f75]/10 text-[#075b55] dark:bg-[#087f75]/20 dark:text-[#a7f3d0]"
                   : "text-[#075b55]/70 hover:bg-[#087f75]/5 hover:text-[#075b55] dark:text-[#f5f5ed]/65 dark:hover:bg-white/5 dark:hover:text-[#f5f5ed]"
               )}
+              title={collapsed ? label : undefined}
             >
               <Icon
                 className={cn(
-                  "size-4.5",
+                  "size-4.5 shrink-0",
                   active
                     ? "text-[#087f75] dark:text-[#7fe0d2]"
                     : "text-[#075b55]/50 dark:text-[#f5f5ed]/50"
                 )}
               />
-              {label}
+              <span className={cn(collapsed && "sr-only")}>{label}</span>
             </Link>
           );
         })}
@@ -309,16 +325,26 @@ function SidebarContent({
       <div className="border-t border-[#075b55]/10 p-3 dark:border-white/10">
         <Link
           href="/"
-          className="mb-3 flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-[#075b55]/70 transition-colors duration-200 hover:bg-[#087f75]/5 hover:text-[#075b55] dark:text-[#f5f5ed]/65 dark:hover:bg-white/5 dark:hover:text-[#f5f5ed]"
+          title={collapsed ? "Back to website" : undefined}
+          className={cn(
+            "mb-3 flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-[#075b55]/70 transition-colors duration-200 hover:bg-[#087f75]/5 hover:text-[#075b55] dark:text-[#f5f5ed]/65 dark:hover:bg-white/5 dark:hover:text-[#f5f5ed]",
+            collapsed && "justify-center px-0"
+          )}
         >
-          <Home className="size-4.5 text-[#075b55]/50 dark:text-[#f5f5ed]/50" />
-          Back to website
+          <Home className="size-4.5 shrink-0 text-[#075b55]/50 dark:text-[#f5f5ed]/50" />
+          <span className={cn(collapsed && "sr-only")}>Back to website</span>
         </Link>
 
-        <div className="flex items-center gap-2.5 rounded-xl border border-[#075b55]/10 p-2.5 dark:border-white/10">
-          <UserAvatar user={user} className="size-9" />
+        <div
+          className={cn(
+            "flex items-center gap-2.5 rounded-xl border border-[#075b55]/10 p-2.5 dark:border-white/10",
+            collapsed && "justify-center"
+          )}
+          title={collapsed ? `${user.name} (${user.email})` : undefined}
+        >
+          <UserAvatar user={user} className="size-9 shrink-0" />
 
-          <div className="min-w-0 flex-1">
+          <div className={cn("min-w-0 flex-1", collapsed && "sr-only")}>
             <p className="truncate text-sm font-semibold text-[#075b55] dark:text-[#f5f5ed]">
               {user.name}
             </p>
@@ -327,17 +353,25 @@ function SidebarContent({
             </p>
           </div>
 
-          <RoleBadge role={role} />
+          <span className={cn(collapsed && "sr-only")}>
+            <RoleBadge role={role} />
+          </span>
         </div>
 
         <button
           type="button"
           onClick={onSignOut}
           disabled={signingOut}
-          className="mt-2 flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-red-600 transition-colors duration-200 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-500/10"
+          className={cn(
+            "mt-2 flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-red-600 transition-colors duration-200 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-500/10",
+            collapsed && "justify-center px-0"
+          )}
+          title={collapsed ? "Sign out" : undefined}
         >
-          <LogOut className="size-4.5" />
-          {signingOut ? "Signing out…" : "Sign out"}
+          <LogOut className="size-4.5 shrink-0" />
+          <span className={cn(collapsed && "sr-only")}>
+            {signingOut ? "Signing out…" : "Sign out"}
+          </span>
         </button>
       </div>
     </div>
@@ -357,6 +391,7 @@ export default function DashboardShell({
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const items = navByRole[role];
@@ -398,7 +433,13 @@ export default function DashboardShell({
   return (
     <div className="min-h-screen bg-[#f5f5ed]/50 dark:bg-[#06110f]">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-[#075b55]/10 bg-white lg:block dark:border-white/10 dark:bg-[#081715]">
+      <aside
+        id="dashboard-desktop-sidebar"
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden border-r border-[#075b55]/10 bg-white transition-[width] duration-200 lg:block dark:border-white/10 dark:bg-[#081715]",
+          sidebarCollapsed ? "w-20" : "w-64"
+        )}
+      >
         <SidebarContent
           role={role}
           user={user}
@@ -406,6 +447,7 @@ export default function DashboardShell({
           onNavigate={closeSidebar}
           onSignOut={handleSignOut}
           signingOut={signingOut}
+          collapsed={sidebarCollapsed}
         />
       </aside>
 
@@ -447,7 +489,7 @@ export default function DashboardShell({
         </div>
       ) : null}
 
-      <div className="lg:pl-64">
+      <div className={cn("transition-[padding] duration-200", sidebarCollapsed ? "lg:pl-20" : "lg:pl-64")}>
         {/* Dashboard header */}
         <header className="sticky top-0 z-30 border-b border-[#075b55]/10 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-[#081715]/90">
           <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
@@ -461,6 +503,24 @@ export default function DashboardShell({
                 className="flex size-10 shrink-0 items-center justify-center rounded-full border border-[#075b55]/15 text-[#075b55] transition-colors hover:bg-[#087f75]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087f75]/50 lg:hidden dark:border-white/15 dark:text-[#f5f5ed] dark:hover:bg-white/5"
               >
                 <Menu className="size-5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed((value) => !value)}
+                aria-label={
+                  sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+                }
+                aria-expanded={!sidebarCollapsed}
+                aria-controls="dashboard-desktop-sidebar"
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="hidden size-10 shrink-0 items-center justify-center rounded-full border border-[#075b55]/15 text-[#075b55] transition-colors hover:bg-[#087f75]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087f75]/50 lg:flex dark:border-white/15 dark:text-[#f5f5ed] dark:hover:bg-white/5"
+              >
+                {sidebarCollapsed ? (
+                  <PanelLeftOpen className="size-5" />
+                ) : (
+                  <PanelLeftClose className="size-5" />
+                )}
               </button>
 
               <div className="min-w-0">
@@ -497,9 +557,14 @@ export default function DashboardShell({
                 aria-label="Open profile"
                 className="flex items-center gap-2 rounded-full border border-transparent p-1 transition-colors hover:bg-[#087f75]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087f75]/50 dark:hover:bg-white/5"
               >
-                <UserAvatar user={user} className="size-8" />
-                <span className="hidden max-w-28 truncate text-sm font-semibold text-[#075b55] sm:block dark:text-[#f5f5ed]">
-                  {user.name}
+                <UserAvatar user={user} className="size-8 shrink-0" />
+                <span className="hidden min-w-0 text-left sm:block">
+                  <span className="block max-w-36 truncate text-sm font-semibold text-[#075b55] dark:text-[#f5f5ed]">
+                    {user.name}
+                  </span>
+                  <span className="block max-w-36 truncate text-[11px] text-[#075b55]/55 dark:text-[#f5f5ed]/50">
+                    {user.email}
+                  </span>
                 </span>
               </Link>
 

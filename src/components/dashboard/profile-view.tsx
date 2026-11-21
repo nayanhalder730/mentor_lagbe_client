@@ -61,6 +61,28 @@ function toForm(profile: User): ProfileForm {
   };
 }
 
+/** Mirrors the image URL validation applied by PATCH /api/users/me. */
+function validateImageUrl(value: string): string | null {
+  const trimmed = value.trim();
+
+  if (trimmed === "") return null;
+  if (trimmed.length > 2048) {
+    return "Profile image URL must be at most 2048 characters.";
+  }
+
+  try {
+    const url = new URL(trimmed);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return "Profile image must be an http(s) URL.";
+    }
+  } catch {
+    return "Profile image must be a valid URL.";
+  }
+
+  return null;
+}
+
 /** Mirrors PATCH /api/users/me field validation exactly. */
 function validateProfileForm(form: ProfileForm): string | null {
   const name = form.name.trim();
@@ -82,19 +104,7 @@ function validateProfileForm(form: ProfileForm): string | null {
   }
 
   if (form.image) {
-    if (form.image.length > 2048) {
-      return "Profile image URL must be at most 2048 characters.";
-    }
-
-    try {
-      const url = new URL(form.image);
-
-      if (url.protocol !== "http:" && url.protocol !== "https:") {
-        return "Profile image must be an http(s) URL.";
-      }
-    } catch {
-      return "Profile image must be a valid URL.";
-    }
+    return validateImageUrl(form.image);
   }
 
   return null;
@@ -165,6 +175,7 @@ export default function ProfileView() {
     error: null,
   });
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM);
+  const [imageUrlDraft, setImageUrlDraft] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -183,6 +194,7 @@ export default function ProfileView() {
 
         setState({ status: "ready", profile, error: null });
         setForm(toForm(profile));
+        setImageUrlDraft(profile.image ?? "");
       })
       .catch((error: unknown) => {
         if (!active) return;
@@ -227,6 +239,7 @@ export default function ProfileView() {
       const url = await uploadImageToImgBb(selectedFile);
 
       setForm((current) => ({ ...current, image: url }));
+      setImageUrlDraft(url);
       toast.success("Profile image uploaded");
     } catch (error) {
       const message =
@@ -245,12 +258,37 @@ export default function ProfileView() {
     if (busy) return;
 
     setForm((current) => ({ ...current, image: null }));
+    setImageUrlDraft("");
     setSelectedFile(null);
     setUploadError(null);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const handleApplyUrl = () => {
+    if (busy) return;
+
+    const error = validateImageUrl(imageUrlDraft);
+
+    if (error) {
+      setUploadError(error);
+      toast.error(error);
+      return;
+    }
+
+    const url = imageUrlDraft.trim() || null;
+
+    setForm((current) => ({ ...current, image: url }));
+    setSelectedFile(null);
+    setUploadError(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    toast.success(url ? "Profile image URL applied" : "Profile image cleared");
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -434,6 +472,35 @@ export default function ProfileView() {
                         the app.
                       </p>
                     ) : null}
+
+                    <div className="flex flex-wrap items-end gap-2">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <Label htmlFor="profile-image-url">
+                          Or paste an image URL
+                        </Label>
+                        <Input
+                          id="profile-image-url"
+                          type="url"
+                          inputMode="url"
+                          value={imageUrlDraft}
+                          onChange={(event) => {
+                            setImageUrlDraft(event.target.value);
+                            setUploadError(null);
+                          }}
+                          placeholder="https://example.com/photo.jpg"
+                          disabled={busy}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={busy}
+                        onClick={handleApplyUrl}
+                      >
+                        Apply URL
+                      </Button>
+                    </div>
 
                     <input
                       ref={fileInputRef}
