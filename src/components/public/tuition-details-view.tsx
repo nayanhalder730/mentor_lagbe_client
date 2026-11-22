@@ -39,7 +39,7 @@ import {
   getTuition,
 } from "@/lib/api-endpoints";
 import { normalizeRole } from "@/lib/roles";
-import type { Application, Tuition } from "@/types/api";
+import type { Application, ApplicationStatus, Tuition } from "@/types/api";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -53,7 +53,11 @@ type ApplicationState =
   | { status: "loading" }
   | { status: "error"; error: string }
   | { status: "limitReached"; error: string }
-  | { status: "applied"; application: Application | null }
+  | {
+      status: "applied";
+      application: Application | null;
+      existingStatus?: ApplicationStatus | null;
+    }
   | { status: "notApplied" };
 
 type ApplicationForm = {
@@ -224,7 +228,11 @@ export default function TuitionDetailsView({
 
         setApplication(
           data.hasApplied
-            ? { status: "applied", application: null }
+            ? {
+                status: "applied",
+                application: null,
+                existingStatus: data.status,
+              }
             : { status: "notApplied" },
         );
       })
@@ -274,7 +282,11 @@ export default function TuitionDetailsView({
         studentNote: form.studentNote.trim() === "" ? null : form.studentNote.trim(),
       });
 
-      setApplication({ status: "applied", application: created });
+      setApplication({
+        status: "applied",
+        application: created,
+        existingStatus: created.status,
+      });
       setForm(EMPTY_FORM);
       toast.success("Application submitted successfully");
       router.refresh();
@@ -303,6 +315,19 @@ export default function TuitionDetailsView({
       Back to Browse Tuitions
     </Link>
   );
+
+  const appliedStatus: ApplicationStatus | null =
+    application.status === "applied"
+      ? application.application?.status ?? application.existingStatus ?? null
+      : null;
+  const appliedStatusMessage =
+    appliedStatus === "pending"
+      ? "Application pending review."
+      : appliedStatus === "accepted"
+        ? "Application accepted."
+        : appliedStatus === "rejected"
+          ? "Application rejected."
+          : "Already applied";
 
   return (
     <main className="bg-[#f5f5ed] dark:bg-[#06110f]">
@@ -577,24 +602,25 @@ export default function TuitionDetailsView({
                             <p className="mt-1 text-sm font-semibold text-[#075b55] dark:text-[#f5f5ed]">
                               {application.application
                                 ? `Applied ${formatDate(application.application.appliedAt)}`
-                                : "Already applied"}
+                                : appliedStatusMessage}
                             </p>
                           </div>
                           <StatusBadge
-                            tone={
-                              application.application
-                                ? applicationStatusTone(application.application.status)
-                                : "amber"
-                            }
+                            tone={appliedStatus ? applicationStatusTone(appliedStatus) : "amber"}
                           >
-                            {application.application
-                              ? titleCase(application.application.status)
-                              : "Applied"}
+                            {appliedStatus ? titleCase(appliedStatus) : "Applied"}
                           </StatusBadge>
                         </div>
                         <p className="mt-4 text-xs text-[#075b55]/55 dark:text-[#f5f5ed]/50">
-                          Duplicate applications are handled by the backend.
-                          This card only reflects your existing application.
+                          Track this application in{" "}
+                          <Link
+                            href="/dashboard/student/my-applications"
+                            className="font-semibold underline underline-offset-2"
+                          >
+                            My Applications
+                          </Link>
+                          . Duplicate applications are handled by the backend;
+                          pending applications can be cancelled there.
                         </p>
                       </Panel>
                     ) : (
@@ -672,7 +698,7 @@ export default function TuitionDetailsView({
                             ) : (
                               <Check aria-hidden="true" />
                             )}
-                            {submitting ? "Submitting…" : "Submit application"}
+                            {submitting ? "Submitting…" : "Apply Now"}
                           </Button>
                         </form>
                       </Panel>

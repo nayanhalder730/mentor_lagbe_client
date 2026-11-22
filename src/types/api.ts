@@ -216,6 +216,8 @@ export type CreateApplicationInput = {
 /** Minimal result of the authenticated student application check. */
 export type ApplicationCheckData = {
   hasApplied: boolean;
+  /** Review status of the existing application, or null when none exists. */
+  status: ApplicationStatus | null;
 };
 
 export type ReviewApplicationInput = {

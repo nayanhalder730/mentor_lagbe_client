@@ -133,6 +133,7 @@ function toCreateInput(form: FormState): CreateTuitionInput {
 export default function PostTuitionView() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submittingRef = useRef(false);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -199,7 +200,9 @@ export default function PostTuitionView() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (busy) return;
+    // Ref guard is synchronous: two submit events in one React batch cannot
+    // both start a request before setSubmitting() re-renders the button.
+    if (busy || submittingRef.current) return;
 
     const validationError = validateForm(form);
 
@@ -210,10 +213,14 @@ export default function PostTuitionView() {
     }
 
     setFormError(null);
+    submittingRef.current = true;
     setSubmitting(true);
+
+    let created = false;
 
     try {
       await createTuition(toCreateInput(form));
+      created = true;
 
       toast.success("Tuition created and submitted for approval");
 
@@ -224,9 +231,6 @@ export default function PostTuitionView() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-
-      router.push("/dashboard/tutor/my-tuitions");
-      router.refresh();
     } catch (error) {
       const message = isApiError(error)
         ? error.message
@@ -235,7 +239,19 @@ export default function PostTuitionView() {
       setFormError(message);
       toast.error(message);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
+    }
+
+    // Navigation is separate from creation: a failure here must never be
+    // reported as a failed insert, which already returned 201.
+    if (created) {
+      try {
+        router.push("/dashboard/tutor/my-tuitions");
+        router.refresh();
+      } catch {
+        toast.message("Tuition saved. Open My Tuitions to view it.");
+      }
     }
   };
 
