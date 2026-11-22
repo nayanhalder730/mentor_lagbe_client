@@ -3,7 +3,154 @@ import { jwt } from "better-auth/plugins";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 
-const client = new MongoClient(process.env.MONGODB_URI as string);
+type MongoAdapterFactory = ReturnType<typeof mongodbAdapter>;
+type MongoAdapter = ReturnType<MongoAdapterFactory>;
+type MongoAdapterOptions = Parameters<MongoAdapterFactory>[0];
+
+/**
+ * Next.js can evaluate this module more than once in one process, so the
+ * client and its single connection attempt live on globalThis. Both are
+ * created lazily on the first database operation, never at module load, so
+ * builds/prerenders that never touch auth do not open a database connection.
+ */
+const mongoGlobal = globalThis as typeof globalThis & {
+  __mentorLagbeMongoClient?: MongoClient;
+  __mentorLagbeConnectionPromise?: Promise<MongoClient>;
+};
+
+function getMongoClient(): MongoClient {
+  if (!mongoGlobal.__mentorLagbeMongoClient) {
+    const uri = process.env.MONGODB_URI;
+
+    if (typeof uri !== "string" || uri.trim() === "") {
+      throw new Error("MONGODB_URI is not configured");
+    }
+
+    mongoGlobal.__mentorLagbeMongoClient = new MongoClient(uri);
+  }
+
+  return mongoGlobal.__mentorLagbeMongoClient;
+}
+
+/**
+ * Concurrent requests share one connect() attempt. On failure both the
+ * rejected promise AND the client are evicted: the MongoDB driver closes the
+ * topology when connect() fails, so keeping that client cached would make
+ * every later request fail with MongoTopologyClosedError. A fresh attempt on
+ * a fresh client is therefore safe. Nothing here ever calls close(), so
+ * requests already in flight keep using their connected client.
+ */
+function getConnectionPromise(): Promise<MongoClient> {
+  if (!mongoGlobal.__mentorLagbeConnectionPromise) {
+    const client = getMongoClient();
+
+    const attempt = client.connect().catch((error: unknown) => {
+      // Only evict if this attempt is still the cached one; a newer attempt
+      // may have already installed fresh state.
+      if (mongoGlobal.__mentorLagbeConnectionPromise === attempt) {
+        mongoGlobal.__mentorLagbeConnectionPromise = undefined;
+      }
+      if (mongoGlobal.__mentorLagbeMongoClient === client) {
+        mongoGlobal.__mentorLagbeMongoClient = undefined;
+      }
+      throw error;
+    });
+
+    mongoGlobal.__mentorLagbeConnectionPromise = attempt;
+  }
+
+  return mongoGlobal.__mentorLagbeConnectionPromise;
+}
+
+async function getReadyDb() {
+  const client = await getConnectionPromise();
+  return client.db(resolveDatabaseName());
+}
+
+const ADAPTER_METHODS = [
+  "create",
+  "findOne",
+  "findMany",
+  "count",
+  "update",
+  "updateMany",
+  "delete",
+  "deleteMany",
+  "consumeOne",
+  "incrementOne",
+  "transaction",
+] as const;
+
+/**
+ * Better Auth resolves its `database` option synchronously, but the MongoDB
+ * adapter starts index creation as soon as it is constructed. The factory
+ * therefore returns a delegating adapter: every operation first awaits one
+ * shared, retryable readiness promise and only then forwards to the real
+ * adapter. That is what keeps auth operations off an unconnected — or
+ * previously failed — topology; caching a promise alone would not.
+ */
+function createReadyDatabaseFactory(): MongoAdapterFactory {
+  return (options: MongoAdapterOptions): MongoAdapter => {
+    let adapterPromise: Promise<MongoAdapter> | null = null;
+
+    const getAdapter = (): Promise<MongoAdapter> => {
+      if (!adapterPromise) {
+        const pending = getReadyDb().then((db) => mongodbAdapter(db)(options));
+        adapterPromise = pending;
+
+        // A failed connect/construction must not be cached forever.
+        void pending.catch(() => {
+          if (adapterPromise === pending) adapterPromise = null;
+        });
+      }
+
+      return adapterPromise;
+    };
+
+    const adapter = {} as MongoAdapter;
+
+    const delegate =
+      (method: (typeof ADAPTER_METHODS)[number]) =>
+      (...args: unknown[]) =>
+        getAdapter().then((ready) => {
+          const handler = ready[method] as
+            | ((...callArgs: unknown[]) => unknown)
+            | undefined;
+
+          if (typeof handler !== "function") {
+            throw new Error(`MongoDB adapter does not implement ${method}`);
+          }
+
+          return handler.apply(ready, args);
+        });
+
+    for (const method of ADAPTER_METHODS) {
+      Object.defineProperty(adapter, method, {
+        value: delegate(method),
+        enumerable: true,
+        configurable: true,
+      });
+    }
+
+    Object.defineProperty(adapter, "id", {
+      value: "mongodb-adapter",
+      enumerable: true,
+      configurable: true,
+    });
+
+    // Better Auth reads adapter.options?.adapterConfig.transaction to decide
+    // when to flush pending hooks after an error. The adapter is built with
+    // no `client` config, which disables transactions, so mirror that value
+    // here without forcing a connection while resolving the database option.
+    Object.defineProperty(adapter, "options", {
+      value: { adapterConfig: { adapterId: "mongodb-adapter", transaction: false } },
+      enumerable: true,
+      configurable: true,
+    });
+
+    return adapter;
+  };
+}
 
 /**
  * Environment values pasted into hosting dashboards can retain inline
@@ -21,7 +168,7 @@ function resolveDatabaseName(): string {
   return cleaned || "mentor_lagbe";
 }
 
-const db = client.db(resolveDatabaseName());
+const readyDatabase = createReadyDatabaseFactory();
 
 // Social login is optional — only register providers when credentials exist.
 const socialProviders = {
@@ -46,7 +193,7 @@ const socialProviders = {
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
-  database: mongodbAdapter(db),
+  database: readyDatabase,
   emailAndPassword: {
     enabled: true,
   },
