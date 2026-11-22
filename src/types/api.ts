@@ -177,7 +177,9 @@ export type Application = {
   tuitionTitle: string;
   subject: string;
   monthlyFee: number;
-  tutorName: string | null;
+  // Only GET /api/applications/my enriches rows with the tutor's name; other
+  // application responses omit the field entirely.
+  tutorName?: string | null;
   tutorEmail: string;
   studentName: string;
   studentEmail: string;
