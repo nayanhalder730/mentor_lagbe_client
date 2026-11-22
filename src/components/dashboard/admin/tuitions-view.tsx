@@ -570,7 +570,7 @@ export default function AdminTuitionsView() {
                             </p>
                             <p
                               className="truncate text-xs text-[#075b55]/55 dark:text-[#f5f5ed]/50"
-                              title={tuition.tutorEmail}
+                              title={tuition.tutorEmail ?? undefined}
                             >
                               {tuition.tutorEmail}
                             </p>

@@ -11,7 +11,6 @@ import {
   CalendarDays,
   Check,
   Clock,
-  Mail,
   MapPin,
   RefreshCw,
   TriangleAlert,
@@ -453,12 +452,6 @@ export default function TuitionDetailsView({
                           </p>
                         </div>
                       </div>
-                      {details.tuition.tutorEmail ? (
-                        <p className="mt-3 flex items-center gap-2 truncate text-xs text-[#075b55]/60 dark:text-[#f5f5ed]/60">
-                          <Mail className="size-4 shrink-0" aria-hidden="true" />
-                          {details.tuition.tutorEmail}
-                        </p>
-                      ) : null}
                       {details.tuition.tutorBio ? (
                         <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-[#075b55]/70 dark:text-[#f5f5ed]/65">
                           {details.tuition.tutorBio}

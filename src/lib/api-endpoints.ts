@@ -160,7 +160,7 @@ export function updateTuitionActiveStatus(id: string, isActive: boolean) {
   ).then((response) => response.data);
 }
 
-/** Returns nothing: the backend responds with a message but no `data`. */
+/** Cleanup counts are returned for observability; the UI only needs success. */
 export async function deleteTuition(id: string): Promise<void> {
   await apiFetch<ApiMessageResponse>(resourcePath("/api/tuitions", id), {
     method: "DELETE",

@@ -896,7 +896,7 @@ export default function MyTuitionsView() {
             <AlertDialogTitle>Delete this tuition?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleting
-                ? `${deleting.title} will be permanently removed. Existing applications are not deleted.`
+                ? `${deleting.title} will be permanently removed. Related applications and saved bookmarks will also be removed.`
                 : "This tuition will be permanently removed."}
             </AlertDialogDescription>
           </AlertDialogHeader>

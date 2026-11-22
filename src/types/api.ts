@@ -107,7 +107,11 @@ export type Tuition = {
   bannerImage: string | null;
   description: string;
   tutorName: string;
-  tutorEmail: string;
+  /**
+   * Public tuition responses intentionally omit the tutor's private email.
+   * Admin moderation responses include it.
+   */
+  tutorEmail?: string | null;
   /** Public tutor profile details, available on the detail endpoint. */
   tutorImage?: string | null;
   tutorBio?: string | null;
